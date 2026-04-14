@@ -1,0 +1,12 @@
+__pycache__/
+*.pkl
+*.pyc
+.env
+.DS_Store
+*.egg-info/
+dist/
+build/
+.streamlit/
+*.csv
+.pytest_cache/
+venv/
