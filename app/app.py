@@ -11,9 +11,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # ========== PAGE CONFIG ==========
+logo_path = Path(__file__).parent / "assets" / "logo.png"
+
 st.set_page_config(
     page_title="GlowGuide - Skincare Assistant",
-    page_icon="S",
+    page_icon=str(logo_path),
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -21,90 +23,116 @@ st.set_page_config(
 # ========== CUSTOM CSS ==========
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Raleway:ital,wght@0,100..900;1,100..900&family=Space+Grotesk:wght@300..700&display=swap');
+
 * {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
 }
 
 .main {
-    background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
 }
 
 /* Tabs Styling */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-    border-bottom: 2px solid #d0d0d0;
+    gap: 12px;
+    border-bottom: 1px solid #e5e7eb;
     background-color: transparent;
 }
 
 .stTabs [data-baseweb="tab"] {
-    padding: 14px 28px;
-    font-weight: 600;
+    padding: 16px 24px;
+    font-weight: 500;
     font-size: 15px;
-    border-radius: 10px 10px 0 0;
-    color: #666666;
-    background-color: #f5f5f5;
+    font-family: 'Space Grotesk', sans-serif;
+    border-radius: 8px 8px 0 0;
+    color: #6b7280;
+    background-color: transparent;
     border-bottom: 3px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stTabs [data-baseweb="tab"][aria-selected="true"] {
     color: #000000;
-    background-color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.02);
     border-bottom-color: #000000;
+    font-weight: 600;
 }
 
 /* Button Styling */
 .stButton>button {
-    background: #000000;
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
     color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     height: 48px;
     font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
     font-size: 15px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
 }
 
 .stButton>button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    background: #1a1a1a;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.18);
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
 }
 
 .stButton>button:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
 }
 
 /* Typography */
 h1, h2, h3 {
     color: #000000;
-    font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.5px;
 }
 
 h1 {
     text-align: center;
     margin-bottom: 12px;
-    font-size: 40px;
-    color: #000000;
+    font-size: 44px;
+    font-weight: 700;
+    animation: fadeIn 0.6s ease-out;
 }
 
 h2 {
-    font-size: 28px;
-    margin-top: 20px;
-    margin-bottom: 16px;
-    border-left: 4px solid #000000;
-    padding-left: 12px;
+    font-size: 32px;
+    margin-top: 24px;
+    margin-bottom: 18px;
+    font-weight: 700;
 }
 
 h3 {
-    font-size: 20px;
-    margin-top: 16px;
-    margin-bottom: 12px;
+    font-size: 22px;
+    margin-top: 18px;
+    margin-bottom: 14px;
+    font-weight: 600;
 }
 
 p {
-    color: #555555;
-    line-height: 1.6;
+    color: #4b5563;
+    line-height: 1.7;
+    font-family: 'DM Sans', sans-serif;
 }
 
 /* Input Styling */
@@ -112,11 +140,13 @@ p {
 .stTextArea textarea,
 .stNumberInput input,
 .stSelectbox select {
-    border: 2px solid #d0d0d0 !important;
-    border-radius: 10px !important;
+    border: 2px solid #e5e7eb !important;
+    border-radius: 8px !important;
     font-size: 15px !important;
-    padding: 12px 16px !important;
-    transition: all 0.3s ease !important;
+    padding: 14px 16px !important;
+    font-family: 'DM Sans', sans-serif !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background-color: #fafbfc !important;
 }
 
 .stTextInput input:focus,
@@ -124,156 +154,196 @@ p {
 .stNumberInput input:focus,
 .stSelectbox select:focus {
     border-color: #000000 !important;
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1) !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Checkbox Styling */
 .stCheckbox {
-    padding: 8px 0;
+    padding: 10px 0;
+    transition: all 0.2s ease;
 }
 
 .stCheckbox label {
     font-weight: 500;
-    color: #000000;
+    color: #1f2937;
+    font-family: 'DM Sans', sans-serif;
 }
 
 /* Metric Cards */
 .metric-card {
     background: white;
-    padding: 20px;
+    padding: 22px;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border-left: 4px solid #000000;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f3f4f6;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.metric-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
 }
 
 /* Product Cards */
 .product-card {
     background: white;
-    padding: 18px;
+    padding: 20px;
     border-radius: 12px;
-    margin: 10px 0;
-    border-left: 4px solid #000000;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    transition: all 0.3s ease;
+    margin: 12px 0;
+    border: 1px solid #f3f4f6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .product-card:hover {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+    border-color: #e5e7eb;
 }
 
 /* Tags */
 .ingredient-tag {
     display: inline-block;
-    background: #f0f0f0;
-    color: #000000;
+    background: #f3f4f6;
+    color: #1f2937;
     padding: 8px 14px;
     border-radius: 20px;
-    margin: 6px 4px 6px 0;
+    margin: 6px 6px 6px 0;
     font-size: 13px;
-    font-weight: 600;
-    border: 1px solid #d0d0d0;
+    font-weight: 500;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.ingredient-tag:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
 }
 
 .ingredient-tag.safe {
-    background: #e8e8e8;
-    color: #000000;
-    border-color: #b0b0b0;
+    background: #ecfdf5;
+    color: #065f46;
+    border-color: #6ee7b7;
 }
 
 .ingredient-tag.active {
-    background: #d0d0d0;
-    color: #000000;
-    border-color: #a0a0a0;
+    background: #ede9fe;
+    color: #6d28d9;
+    border-color: #c4b5fd;
 }
 
 .ingredient-tag.warning {
-    background: #e0e0e0;
-    color: #333333;
-    border-color: #b0b0b0;
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fcd34d;
 }
 
 /* Badges */
 .success-badge {
-    background: #f0f0f0;
-    color: #000000;
-    padding: 14px 18px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    color: #15803d;
+    padding: 16px 20px;
     border-radius: 10px;
-    margin: 12px 0;
-    border-left: 4px solid #555555;
+    margin: 14px 0;
     font-weight: 500;
+    border: 1px solid #86efac;
+    animation: slideInLeft 0.5s ease-out;
 }
 
 .info-badge {
-    background: #f5f5f5;
-    color: #000000;
-    padding: 14px 18px;
+    background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+    color: #0c4a6e;
+    padding: 16px 20px;
     border-radius: 10px;
-    margin: 12px 0;
-    border-left: 4px solid #333333;
+    margin: 14px 0;
     font-weight: 500;
+    border: 1px solid #93c5fd;
+    animation: slideInLeft 0.5s ease-out 0.1s both;
 }
 
 .warning-badge {
-    background: #ececec;
-    color: #333333;
-    padding: 14px 18px;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    color: #92400e;
+    padding: 16px 20px;
     border-radius: 10px;
-    margin: 12px 0;
-    border-left: 4px solid #666666;
+    margin: 14px 0;
     font-weight: 500;
+    border: 1px solid #fcd34d;
+    animation: slideInLeft 0.5s ease-out 0.2s both;
 }
 
 /* Divider */
 .divider {
-    margin: 24px 0;
-    border-top: 1px solid #d0d0d0;
+    margin: 28px 0;
+    border-top: 1px solid #e5e7eb;
 }
 
 /* Slider */
 .stSlider label {
     font-weight: 600;
-    color: #000000;
+    color: #1f2937;
+    font-family: 'DM Sans', sans-serif;
 }
 
 /* Sidebar Header */
 .sidebar-header {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: #000000;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
     border-bottom: 2px solid #000000;
+    letter-spacing: -0.3px;
 }
 
 /* Radio Button */
 .stRadio label {
-    font-weight: 600;
-    color: #000000;
+    font-weight: 500;
+    color: #1f2937;
+    font-family: 'DM Sans', sans-serif;
 }
 
 /* Multiselect */
 .stMultiSelect label {
     font-weight: 600;
-    color: #000000;
+    color: #1f2937;
+    font-family: 'DM Sans', sans-serif;
 }
 
 /* Table */
 .stDataFrame {
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f3f4f6;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # ========== TITLE & SUBTITLE ==========
-st.markdown("<h1>GlowGuide - Smart Skincare Assistant</h1>", unsafe_allow_html=True)
+col1, col2 = st.columns([1, 5])
+with col1:
+    st.image(str(logo_path), width=80)
+with col2:
+    st.markdown("<h1>GlowGuide</h1>", unsafe_allow_html=True)
+
 st.markdown("<p style='text-align: center; color: #555555; font-size: 17px; margin-bottom: 24px;'>Find the perfect skincare products based on your unique needs</p>", unsafe_allow_html=True)
 
 # ========== SIDEBAR - USER PROFILE ==========
 with st.sidebar:
+    # Logo + Title in sidebar
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        st.image(str(logo_path), width=50)
+    with col2:
+        st.markdown("<h2 style='margin: 0; padding-top: 5px;'>GlowGuide</h2>", unsafe_allow_html=True)
+    
+    st.divider()
+    
     st.markdown("<div class='sidebar-header'>Your Profile</div>", unsafe_allow_html=True)
     
     skin_type = st.selectbox(
