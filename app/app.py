@@ -3,12 +3,26 @@
 
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent))
+
+# Set up path for imports
+current_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(current_dir))
 
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+
+# Import utilities
+from app.utils import get_combined_recommendations
+from app.components import (
+    display_recommendations_grid,
+    display_explainability_breakdown,
+    display_combined_recommendations,
+    display_ml_performance_metrics,
+    display_eda_dashboard,
+    display_visualization_selector
+)
 
 # ========== PAGE CONFIG ==========
 logo_path = Path(__file__).parent / "assets" / "logo.png"
@@ -45,34 +59,53 @@ st.markdown("""
     to { opacity: 1; transform: scale(1); }
 }
 
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 0, 0, 0.08); }
+    50% { box-shadow: 0 0 30px rgba(0, 0, 0, 0.12); }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .main {
-    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 50%, #f3f4f6 100%);
 }
 
 /* Tabs Styling */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 12px;
-    border-bottom: 1px solid #e5e7eb;
+    gap: 16px;
+    border-bottom: 2px solid #e5e7eb;
     background-color: transparent;
+    padding-bottom: 12px;
 }
 
 .stTabs [data-baseweb="tab"] {
-    padding: 16px 24px;
-    font-weight: 500;
+    padding: 14px 24px;
+    font-weight: 600;
     font-size: 15px;
     font-family: 'Space Grotesk', sans-serif;
-    border-radius: 8px 8px 0 0;
+    border-radius: 12px;
     color: #6b7280;
     background-color: transparent;
-    border-bottom: 3px solid transparent;
+    border: 2px solid transparent;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.3px;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    color: #1f2937;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-color: #d1d5db;
 }
 
 .stTabs [data-baseweb="tab"][aria-selected="true"] {
-    color: #000000;
-    background-color: rgba(0, 0, 0, 0.02);
-    border-bottom-color: #000000;
-    font-weight: 600;
+    color: #ffffff;
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    border-color: transparent;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Button Styling */
@@ -80,59 +113,67 @@ st.markdown("""
     background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
     color: white;
     border: none;
-    border-radius: 8px;
-    height: 48px;
-    font-weight: 600;
+    border-radius: 10px;
+    height: 50px;
+    font-weight: 700;
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 15px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+    font-size: 16px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    letter-spacing: 0.5px;
 }
 
 .stButton>button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.18);
+    transform: translateY(-4px);
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.25);
     background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
 }
 
 .stButton>button:active {
     transform: translateY(-1px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* Typography */
 h1, h2, h3 {
     color: #000000;
     font-family: 'Space Grotesk', sans-serif;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.8px;
 }
 
 h1 {
     text-align: center;
-    margin-bottom: 12px;
-    font-size: 44px;
-    font-weight: 700;
+    margin-bottom: 16px;
+    font-size: 48px;
+    font-weight: 800;
     animation: fadeIn 0.6s ease-out;
+    background: linear-gradient(135deg, #000000 0%, #333333 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 h2 {
-    font-size: 32px;
-    margin-top: 24px;
-    margin-bottom: 18px;
+    font-size: 34px;
+    margin-top: 28px;
+    margin-bottom: 20px;
     font-weight: 700;
+    animation: slideUp 0.5s ease-out;
 }
 
 h3 {
-    font-size: 22px;
-    margin-top: 18px;
-    margin-bottom: 14px;
+    font-size: 24px;
+    margin-top: 20px;
+    margin-bottom: 16px;
     font-weight: 600;
+    color: #1f2937;
 }
 
 p {
     color: #4b5563;
-    line-height: 1.7;
+    line-height: 1.8;
     font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
 }
 
 /* Input Styling */
@@ -140,13 +181,13 @@ p {
 .stTextArea textarea,
 .stNumberInput input,
 .stSelectbox select {
-    border: 2px solid #e5e7eb !important;
-    border-radius: 8px !important;
+    border: 2px solid #d1d5db !important;
+    border-radius: 10px !important;
     font-size: 15px !important;
-    padding: 14px 16px !important;
+    padding: 14px 18px !important;
     font-family: 'DM Sans', sans-serif !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    background-color: #fafbfc !important;
+    background-color: #ffffff !important;
 }
 
 .stTextInput input:focus,
@@ -155,12 +196,21 @@ p {
 .stSelectbox select:focus {
     border-color: #000000 !important;
     background-color: #ffffff !important;
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Slider Styling */
+.stSlider label {
+    font-weight: 600;
+    color: #1f2937;
+    font-family: 'DM Sans', sans-serif;
+    margin-bottom: 12px;
+    display: block;
 }
 
 /* Checkbox Styling */
 .stCheckbox {
-    padding: 10px 0;
+    padding: 12px 0;
     transition: all 0.2s ease;
 }
 
@@ -168,123 +218,143 @@ p {
     font-weight: 500;
     color: #1f2937;
     font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
 }
 
 /* Metric Cards */
 .metric-card {
-    background: white;
-    padding: 22px;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    border: 1px solid #f3f4f6;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    padding: 26px;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideUp 0.5s ease-out;
 }
 
 .metric-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+    border-color: #d1d5db;
 }
 
 /* Product Cards */
 .product-card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    margin: 12px 0;
-    border: 1px solid #f3f4f6;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    padding: 24px;
+    border-radius: 14px;
+    margin: 14px 0;
+    border: 1.5px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideUp 0.5s ease-out;
 }
 
 .product-card:hover {
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    transform: translateY(-3px);
-    border-color: #e5e7eb;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    transform: translateY(-5px);
+    border-color: #d1d5db;
+    background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
 }
 
 /* Tags */
 .ingredient-tag {
     display: inline-block;
-    background: #f3f4f6;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
     color: #1f2937;
-    padding: 8px 14px;
-    border-radius: 20px;
+    padding: 10px 16px;
+    border-radius: 24px;
     margin: 6px 6px 6px 0;
     font-size: 13px;
-    font-weight: 500;
-    border: 1px solid #e5e7eb;
-    transition: all 0.2s ease;
+    font-weight: 600;
+    border: 1.5px solid #d1d5db;
+    transition: all 0.3s ease;
     cursor: default;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .ingredient-tag:hover {
-    background: #e5e7eb;
-    border-color: #d1d5db;
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+    border-color: #9ca3af;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .ingredient-tag.safe {
-    background: #ecfdf5;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
     color: #065f46;
     border-color: #6ee7b7;
 }
 
+.ingredient-tag.safe:hover {
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    transform: translateY(-2px);
+}
+
 .ingredient-tag.active {
-    background: #ede9fe;
-    color: #6d28d9;
-    border-color: #c4b5fd;
+    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+    color: #4c1d95;
+    border-color: #a78bfa;
+}
+
+.ingredient-tag.active:hover {
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+    transform: translateY(-2px);
 }
 
 .ingredient-tag.warning {
-    background: #fef3c7;
-    color: #92400e;
-    border-color: #fcd34d;
+    background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+    color: #78350f;
+    border-color: #facc15;
+}
+
+.ingredient-tag.warning:hover {
+    box-shadow: 0 4px 12px rgba(202, 138, 4, 0.2);
+    transform: translateY(-2px);
 }
 
 /* Badges */
 .success-badge {
-    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-    color: #15803d;
-    padding: 16px 20px;
-    border-radius: 10px;
-    margin: 14px 0;
-    font-weight: 500;
-    border: 1px solid #86efac;
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    color: #166534;
+    padding: 18px 24px;
+    border-radius: 12px;
+    margin: 16px 0;
+    font-weight: 600;
+    border: 1.5px solid #86efac;
     animation: slideInLeft 0.5s ease-out;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
 }
 
 .info-badge {
-    background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
-    color: #0c4a6e;
-    padding: 16px 20px;
-    border-radius: 10px;
-    margin: 14px 0;
-    font-weight: 500;
-    border: 1px solid #93c5fd;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #0c2d6b;
+    padding: 18px 24px;
+    border-radius: 12px;
+    margin: 16px 0;
+    font-weight: 600;
+    border: 1.5px solid #60a5fa;
     animation: slideInLeft 0.5s ease-out 0.1s both;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
 
 .warning-badge {
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-    color: #92400e;
-    padding: 16px 20px;
-    border-radius: 10px;
-    margin: 14px 0;
-    font-weight: 500;
-    border: 1px solid #fcd34d;
+    background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
+    color: #78350f;
+    padding: 18px 24px;
+    border-radius: 12px;
+    margin: 16px 0;
+    font-weight: 600;
+    border: 1.5px solid #fbbf24;
     animation: slideInLeft 0.5s ease-out 0.2s both;
+    box-shadow: 0 4px 12px rgba(251, 146, 60, 0.15);
 }
 
 /* Divider */
 .divider {
-    margin: 28px 0;
-    border-top: 1px solid #e5e7eb;
-}
-
-/* Slider */
-.stSlider label {
-    font-weight: 600;
-    color: #1f2937;
-    font-family: 'DM Sans', sans-serif;
+    margin: 32px 0;
+    border-top: 2px solid #e5e7eb;
+    opacity: 0.8;
 }
 
 /* Sidebar Header */
@@ -293,9 +363,9 @@ p {
     font-weight: 700;
     color: #000000;
     font-family: 'Space Grotesk', sans-serif;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #000000;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 2.5px solid #000000;
     letter-spacing: -0.3px;
 }
 
@@ -315,10 +385,24 @@ p {
 
 /* Table */
 .stDataFrame {
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    border: 1px solid #f3f4f6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+/* Expander */
+.streamlit-expanderHeader {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.streamlit-expanderHeader:hover {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
 }
 
 </style>
@@ -327,11 +411,19 @@ p {
 # ========== TITLE & SUBTITLE ==========
 col1, col2 = st.columns([1, 5])
 with col1:
-    st.image(str(logo_path), width=80)
+    st.image(str(logo_path), width=90)
 with col2:
-    st.markdown("<h1>GlowGuide</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='margin-top: 10px;'>✨ GlowGuide</h1>", unsafe_allow_html=True)
 
-st.markdown("<p style='text-align: center; color: #555555; font-size: 17px; margin-bottom: 24px;'>Find the perfect skincare products based on your unique needs</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #666666; font-size: 18px; margin-bottom: 28px; font-weight: 500; letter-spacing: 0.3px;'>🌟 Find the perfect skincare products based on your unique needs</p>", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+    .title-section {
+        animation: slideUp 0.6s ease-out;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ========== SIDEBAR - USER PROFILE ==========
 with st.sidebar:
@@ -385,7 +477,7 @@ with st.sidebar:
     cruelty_free = st.checkbox("Cruelty-Free Only", value=False, key="sidebar_cruelty_main")
 
 # ========== MAIN CONTENT - TABBED LAYOUT ==========
-tab1, tab2, tab3 = st.tabs(["Product Search", "Ingredient Analyzer", "Routine Builder"])
+tab1, tab2, tab3, tab_insights = st.tabs(["Product Search", "Ingredient Analyzer", "Routine Builder", "Insights"])
 
 # ========== TAB 1: PRODUCT SEARCH ==========
 with tab1:
@@ -428,43 +520,82 @@ with tab1:
     with f4:
         filter_cruelty = st.checkbox("Cruelty-Free", key="tab1_filter_cruelty")
     
-    search_btn = st.button("Find Similar Products", use_container_width=True, key="tab1_search_btn")
+    search_btn = st.button("🔍 Get Ingredient Recommendations", use_container_width=True, key="tab1_search_btn")
     
     if search_btn:
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-        st.markdown("## Results")
+        # ========== BLOCK 8: ORCHESTRATE RECOMMENDATION WORKFLOW ==========
+        # The coordinator handles all business logic:
+        # - Building user profiles
+        # - Converting between formats
+        # - Orchestrating calls to Block 1 and Block 4
+        # This keeps app.py focused on UI only!
         
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Similarity Score", "92%", "+5%")
-        with col2:
-            st.metric("Safety Score", "88%", "+2%")
-        with col3:
-            st.metric("Predicted Rating", "4.5/5", "+0.3")
-        
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-        
-        st.markdown("### Recommended Products")
-        
-        products = [
-            {"name": "CeraVe Moisturizing Lotion", "brand": "CeraVe", "price": "800", "rating": "4.7", "similarity": "95%"},
-            {"name": "Cetaphil Cream", "brand": "Cetaphil", "price": "600", "rating": "4.5", "similarity": "88%"},
-            {"name": "Neutrogena Hydro Boost", "brand": "Neutrogena", "price": "450", "rating": "4.3", "similarity": "85%"},
-            {"name": "La Roche Posay Lotion", "brand": "La Roche Posay", "price": "1200", "rating": "4.8", "similarity": "92%"},
-            {"name": "Avene Cream", "brand": "Avene", "price": "950", "rating": "4.6", "similarity": "87%"}
-        ]
-        
-        for i, prod in enumerate(products):
-            st.markdown(f"""
-            <div class='product-card'>
-                <strong>{prod['name']}</strong> by {prod['brand']}<br>
-                Price: Rs. {prod['price']} | Rating: {prod['rating']} | Similarity: {prod['similarity']}
-            </div>
-            """, unsafe_allow_html=True)
+        results = get_combined_recommendations(
+            skin_type=skin_type,
+            concerns=skin_concerns,
+            age=age,
+            alcohol_free=alcohol_free or filter_alcohol,
+            fragrance_free=fragrance_free or filter_fragrance,
+            vegan=vegan or filter_vegan,
+            cruelty_free=cruelty_free or filter_cruelty,
+            top_n=5
+        )
         
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
         
-        st.markdown("### Market Insights")
+        # ========== DISPLAY RESULTS (Block 5: Integration UI) ==========
+        
+        # Display combined recommendations (Block 1 + Block 4)
+        display_combined_recommendations(
+            user_profile=results.user_profile.to_dict(),
+            recommendations=results.block1_results,
+            ml_result=results.block4_result,
+            show_comparison=True
+        )
+        
+        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+        
+        # ========== DETAILED BREAKDOWN (OPTIONAL) ==========
+        
+        with st.expander("📊 View Detailed Score Breakdown (Rule-Based)", expanded=False):
+            st.markdown("#### Rule-Based Scoring Details")
+            st.markdown(
+                "This section shows the detailed scoring breakdown from the rule-based engine, "
+                "analyzing factors like skin type, concerns, and age."
+            )
+            
+            tab_breakdown1, tab_breakdown2, tab_breakdown3 = st.tabs([
+                f"#{results.block1_results[0].ingredient}",
+                f"#{results.block1_results[1].ingredient}",
+                f"#{results.block1_results[2].ingredient}"
+            ])
+            
+            with tab_breakdown1:
+                display_explainability_breakdown(results.block1_results[0])
+            
+            with tab_breakdown2:
+                display_explainability_breakdown(results.block1_results[1])
+            
+            with tab_breakdown3:
+                display_explainability_breakdown(results.block1_results[2])
+        
+        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+        
+        # ========== ML MODEL PERFORMANCE INFO ==========
+        
+        with st.expander("🧠 ML Model Details & Performance", expanded=False):
+            st.markdown("#### Machine Learning Model Information")
+            st.markdown(
+                "This model uses K-Nearest Neighbors (KNN) trained on 50 skincare profiles "
+                "to predict ingredient recommendations based on similar user profiles."
+            )
+            st.divider()
+            display_ml_performance_metrics()
+        
+        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+        
+        # Market insights
+        st.markdown("### 📈 Market Insights")
         col1, col2 = st.columns(2)
         
         with col1:
@@ -489,7 +620,7 @@ with tab1:
             fig2.update_layout(showlegend=False, hovermode='x unified')
             st.plotly_chart(fig2, use_container_width=True)
         
-        st.markdown("<div class='success-badge'>Found 5 perfect matches for your skin type!</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='success-badge'>✅ Found {len(results.block1_results)} personalized ingredient recommendations for your {skin_type} skin type!</div>", unsafe_allow_html=True)
 
 # ========== TAB 2: INGREDIENT ANALYZER ==========
 with tab2:
@@ -644,6 +775,10 @@ with tab3:
         """, unsafe_allow_html=True)
         
         st.markdown("<div class='success-badge'>Routine created successfully! Save this for reference.</div>", unsafe_allow_html=True)
+
+# ========== TAB 4: INSIGHTS (EDA DASHBOARD) ==========
+with tab_insights:
+    display_eda_dashboard()
 
 # ========== FOOTER ==========
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
