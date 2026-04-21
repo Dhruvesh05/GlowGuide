@@ -1,15 +1,12 @@
 """
-Block 9: Product Recommendation Engine
+Block 9: Product Recommendation Engine - STABLE VERSION
 
-This module provides the product recommendation function.
-It searches for products containing a specific ingredient
-and returns the top 3 results with product names and prices.
-
-Enhanced with:
-- Robust data normalization (lowercase, strip)
-- Fallback matching logic (exact → partial → first word)
-- Debug logging for transparency
-- Guaranteed results when data available
+Provides robust product recommendations with:
+- Safe CSV loading with error handling
+- Multi-level matching (exact → keyword → random fallback)
+- Always returns 3 products (guaranteed)
+- Optional debug logging
+- Zero crashes on edge cases
 """
 
 from typing import Optional, List, Dict, Any
@@ -17,203 +14,159 @@ from pathlib import Path
 import pandas as pd
 import sys
 
-# Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-from app.utils.loaders import load_dataframe as load_data
 
 
 class ProductRecommender:
-    """
-    Product recommendation engine for skincare products.
+    """Robust product recommendation engine."""
     
-    Searches for products containing a specific ingredient
-    and returns top results with names and prices.
-    
-    Features:
-    - Case-insensitive matching
-    - Fallback to partial/keyword matching
-    - Data normalization for consistency
-    - Debug logging
-    """
-    
-    def __init__(self, products_csv: str = 'data/product.csv', debug: bool = False):
+    def __init__(self, debug: bool = False):
         """
-        Initialize product recommender with products data.
+        Initialize with products data.
+        
+        ✅ STEP 2: LOAD DATASETS SAFELY
         
         Args:
-            products_csv: Path to products CSV file (default: data/product.csv)
-            debug: Enable debug logging (default: False)
+            debug: Enable debug logging
         """
         self.debug = debug
-        
-        try:
-            # Load products data
-            self.products_df = load_data()
-            
-            if self.products_df is None or len(self.products_df) == 0:
-                print(f"❌ Error: Could not load products from {products_csv}")
-                self.products_df = None
-            else:
-                # ✅ STEP 2: DATA NORMALIZATION
-                self._normalize_data()
-                print(f"✅ Loaded {len(self.products_df)} products")
-                if self.debug:
-                    print(f"   Columns: {list(self.products_df.columns)}")
-        
-        except Exception as e:
-            print(f"❌ Error loading products: {e}")
-            self.products_df = None
+        self.products_df = None
+        self._load_data()
     
-    def _normalize_data(self) -> None:
+    def _load_data(self) -> None:
         """
-        Normalize product data for consistent matching.
-        
-        - Convert clean_ingredients to lowercase
-        - Strip whitespace
-        - Create normalized column for matching
+        Load products.csv with error handling.
+        Fill missing values to prevent crashes.
         """
-        if self.products_df is None:
-            return
-        
         try:
-            # Ensure clean_ingredients exists and normalize
+            # Get absolute path to data folder
+            base_dir = Path(__file__).parent.parent.parent
+            csv_path = base_dir / "data" / "product.csv"
+            
+            if not csv_path.exists():
+                print(f"⚠️  Warning: {csv_path} not found")
+                return
+            
+            # Load CSV
+            self.products_df = pd.read_csv(csv_path)
+            
+            # ✅ STEP 3: NORMALIZE DATA
             if 'clean_ingredients' in self.products_df.columns:
-                self.products_df['clean_ingredients_normalized'] = (
+                self.products_df['clean_ingredients'] = (
                     self.products_df['clean_ingredients']
+                    .fillna("")  # Fill missing values
                     .astype(str)
-                    .str.lower()
+                    .str.lower()  # Lowercase
+                    .str.strip()   # Remove spaces
+                )
+            
+            if 'product_name' in self.products_df.columns:
+                self.products_df['product_name'] = (
+                    self.products_df['product_name']
+                    .fillna("Unknown")
+                    .astype(str)
                     .str.strip()
                 )
-            else:
-                print("⚠️  Warning: clean_ingredients column not found")
-                self.products_df['clean_ingredients_normalized'] = ""
             
-            if self.debug:
-                print("   ✅ Data normalization complete")
+            if 'price' in self.products_df.columns:
+                self.products_df['price'] = (
+                    pd.to_numeric(self.products_df['price'], errors='coerce')
+                    .fillna(0.0)
+                )
+            
+            print(f"✅ Loaded {len(self.products_df)} products")
         
         except Exception as e:
-            print(f"⚠️  Error normalizing product data: {e}")
-    
-    def search_products(self, ingredient: str) -> Optional[List[Dict[str, Any]]]:
-        """
-        Search for products containing a specific ingredient.
-        
-        Matching strategy:
-        1. Exact match: ingredient in clean_ingredients
-        2. Fallback 1: Use first word of ingredient
-        3. Fallback 2: Return empty list (not None) for UI handling
-        
-        Args:
-            ingredient: Ingredient name to search for
-        
-        Returns:
-            List of dicts with 'product_name' and 'price' keys (top 3)
-            Returns empty list [] if no products found, None if error
-        """
-        if self.products_df is None:
-            if self.debug:
-                print("❌ Products data not loaded")
-            return None
-        
-        if not ingredient or len(ingredient.strip()) == 0:
-            if self.debug:
-                print("❌ Ingredient cannot be empty")
-            return None
-        
-        try:
-            # ✅ STEP 3A: PRODUCT MATCHING WITH FALLBACK
-            ingredient_lower = ingredient.lower().strip()
-            
-            if self.debug:
-                print(f"🔍 Searching for ingredient: '{ingredient_lower}'")
-            
-            # Step 1: Try exact match
-            matching_products = self._find_matching_products(ingredient_lower)
-            
-            if self.debug:
-                print(f"   Exact match found: {len(matching_products)} products")
-            
-            # Step 2: If no match, try first word
-            if len(matching_products) == 0:
-                first_word = ingredient_lower.split()[0]
-                if self.debug:
-                    print(f"   No exact match, trying first word: '{first_word}'")
-                matching_products = self._find_matching_products(first_word)
-                
-                if self.debug:
-                    print(f"   First word match found: {len(matching_products)} products")
-            
-            # Sort by price (ascending)
-            matching_products.sort(key=lambda x: x['price'])
-            
-            # Return top 3
-            top_3 = matching_products[:3]
-            
-            if self.debug:
-                print(f"   ✅ Returning {len(top_3)} products")
-            
-            return top_3 if len(top_3) > 0 else []
-        
-        except Exception as e:
-            print(f"❌ Error searching products: {e}")
-            if self.debug:
-                import traceback
-                traceback.print_exc()
-            return None
-    
-    def _find_matching_products(self, search_term: str) -> List[Dict[str, Any]]:
-        """
-        Find products matching a search term.
-        
-        Args:
-            search_term: Search term (already lowercase)
-        
-        Returns:
-            List of matching products
-        """
-        matching = []
-        
-        try:
-            for idx, row in self.products_df.iterrows():
-                normalized = str(row.get('clean_ingredients_normalized', '')).lower()
-                
-                # Case-insensitive substring search
-                if search_term in normalized:
-                    product_dict = {
-                        'product_name': str(row.get('product_name', 'Unknown')).strip(),
-                        'price': float(row.get('price', 0))
-                    }
-                    matching.append(product_dict)
-        
-        except Exception as e:
-            print(f"⚠️  Error in _find_matching_products: {e}")
-        
-        return matching
+            print(f"⚠️  Error loading products: {e}")
+            self.products_df = None
     
     def get_products(self, ingredient: str, debug: bool = False) -> Optional[List[Dict[str, Any]]]:
         """
-        Get products containing a specific ingredient (main entry point).
+        ✅ STEP 5: IMPLEMENT get_products FUNCTION
         
-        ✅ STEP 4 & 5: HELPER FUNCTION FOR INTEGRATION
-        
-        This function:
-        - Converts ingredient to lowercase
-        - Tries exact match using substring matching
-        - Falls back to first word if no exact match
-        - Returns top 3 products or empty list
+        Get products with 3-level matching:
+        1. Exact match
+        2. Keyword match (first word)
+        3. Random fallback (always return 3)
         
         Args:
-            ingredient: Ingredient name to search for
-            debug: Enable debug output
+            ingredient: Ingredient name
+            debug: Enable debug logging
         
         Returns:
-            List of top 3 products with 'product_name' and 'price' keys
-            Returns [] (empty list) if no products found
-            Returns None if error
+            List of dicts with product_name and price (always 3 items or None)
         """
+        if self.products_df is None or len(self.products_df) == 0:
+            return None
+        
         self.debug = debug
-        return self.search_products(ingredient)
+        
+        try:
+            # Normalize ingredient
+            ingredient_normalized = ingredient.lower().strip()
+            
+            if self.debug:
+                print(f"🔍 Searching for: '{ingredient_normalized}'")
+            
+            # ✅ STEP 4: ROBUST MATCHING LOGIC
+            # LEVEL 1: Exact match
+            matches = self.products_df[
+                self.products_df['clean_ingredients'].str.contains(ingredient_normalized, na=False)
+            ].copy()
+            
+            if self.debug:
+                print(f"   Level 1 (exact): {len(matches)} matches")
+            
+            # LEVEL 2: Keyword match (first word)
+            if len(matches) == 0:
+                first_word = ingredient_normalized.split()[0]
+                if self.debug:
+                    print(f"   Level 2 (keyword '{first_word}'): ", end="")
+                
+                matches = self.products_df[
+                    self.products_df['clean_ingredients'].str.contains(first_word, na=False)
+                ].copy()
+                
+                if self.debug:
+                    print(f"{len(matches)} matches")
+            
+            # LEVEL 3: Random fallback (always return 3)
+            if len(matches) == 0:
+                if self.debug:
+                    print(f"   Level 3 (random fallback)")
+                
+                matches = self.products_df.sample(
+                    n=min(3, len(self.products_df)),
+                    random_state=hash(ingredient_normalized) % (2**31)
+                ).copy()
+            
+            # Sort by price and get top 3
+            matches = matches.sort_values('price').head(3)
+            
+            # Build result list
+            results = []
+            for _, row in matches.iterrows():
+                results.append({
+                    'product_name': str(row.get('product_name', 'Unknown')),
+                    'price': float(row.get('price', 0.0))
+                })
+            
+            # Pad to 3 if needed
+            while len(results) < 3 and len(self.products_df) > 0:
+                random_product = self.products_df.sample(n=1, random_state=None).iloc[0]
+                results.append({
+                    'product_name': str(random_product['product_name']),
+                    'price': float(random_product['price'])
+                })
+            
+            if self.debug:
+                print(f"   ✅ Returning {len(results)} products")
+            
+            return results[:3] if len(results) > 0 else None
+        
+        except Exception as e:
+            print(f"❌ Error in get_products: {e}")
+            return None
     
     def search_products_detailed(self, ingredient: str) -> Optional[List[Dict[str, Any]]]:
         """
@@ -233,26 +186,36 @@ class ProductRecommender:
         
         try:
             ingredient_lower = ingredient.lower().strip()
-            matching_products = []
+            matches = self.products_df[
+                self.products_df['clean_ingredients'].str.contains(ingredient_lower, na=False)
+            ].copy()
             
-            for idx, row in self.products_df.iterrows():
-                clean_ingredients = str(row.get('clean_ingredients', '')).lower()
-                
-                if ingredient_lower in clean_ingredients:
-                    matching_products.append({
-                        'product_name': row.get('product_name', 'Unknown'),
-                        'price': float(row.get('price', 0)),
-                        'product_type': row.get('product_type', 'Unknown'),
-                        'product_url': row.get('product_url', ''),
-                        'ingredients_found': [ing.strip() for ing in 
-                                            str(row.get('clean_ingredients', '')).split() 
-                                            if ing.lower().startswith(ingredient_lower[:3])]
-                    })
+            # Fallback to first word
+            if len(matches) == 0:
+                first_word = ingredient_lower.split()[0]
+                matches = self.products_df[
+                    self.products_df['clean_ingredients'].str.contains(first_word, na=False)
+                ].copy()
             
-            # Sort by price
-            matching_products.sort(key=lambda x: x['price'])
+            # Fallback to random
+            if len(matches) == 0:
+                matches = self.products_df.sample(
+                    n=min(3, len(self.products_df)),
+                    random_state=hash(ingredient_lower) % (2**31)
+                ).copy()
             
-            return matching_products[:3] if len(matching_products) > 0 else None
+            matches = matches.sort_values('price').head(3)
+            
+            results = []
+            for _, row in matches.iterrows():
+                results.append({
+                    'product_name': str(row.get('product_name', 'Unknown')),
+                    'price': float(row.get('price', 0.0)),
+                    'product_type': str(row.get('product_type', 'Unknown')),
+                    'product_url': str(row.get('product_url', ''))
+                })
+            
+            return results if len(results) > 0 else None
         
         except Exception as e:
             print(f"❌ Error: {e}")
@@ -276,26 +239,32 @@ def get_recommender() -> ProductRecommender:
     return _recommender
 
 
-def get_products(ingredient: str) -> Optional[List[Dict[str, Any]]]:
+def get_products(ingredient: str, debug: bool = False) -> Optional[List[Dict[str, Any]]]:
     """
-    Recommend products for a specific ingredient.
+    ✅ STEP 5: Recommend products for a specific ingredient.
     
-    This is the main function for product recommendations.
+    This is the main standalone function for product recommendations.
+    Supports optional debug logging.
     
     Args:
         ingredient: Ingredient name to search for
+        debug: Enable debug logging (default: False)
     
     Returns:
         List of top 3 products with 'product_name' and 'price' keys
-        or None if no products found
+        or None if error
         
     Example:
-        >>> result = get_products('glycerin')
+        >>> result = get_products('glycerin', debug=True)
         >>> for product in result:
         ...     print(f"{product['product_name']}: ${product['price']}")
     """
-    recommender = get_recommender()
-    return recommender.get_products(ingredient)
+    try:
+        recommender = get_recommender()
+        return recommender.get_products(ingredient, debug=debug)
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return None
 
 
 def main():
