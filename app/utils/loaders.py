@@ -70,14 +70,13 @@ def load_kmeans():
 def load_dataframe():
     """Load and validate cleaned.csv from data/cleaned.csv."""
     try:
-        path = DATA_DIR / "cleaned.csv"
+        path = DATA_DIR / "product.csv"
         if not path.exists():
             st.error(f"Data file not found at {path}")
             return None
         df = pd.read_csv(path)
         
-        required_cols = ["Name", "Brand", "Price", "Rank", "Ingredients", "Label", "Cluster",
-                        "Combination", "Dry", "Normal", "Oily", "Sensitive"]
+        required_cols = ["product_name", "price", "clean_ingredients"]
         assert all(col in df.columns for col in required_cols), \
             f"Missing columns: {[c for c in required_cols if c not in df.columns]}"
         

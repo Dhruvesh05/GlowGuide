@@ -24,6 +24,10 @@ from app.components import (
     display_visualization_selector
 )
 
+# Import ML backend functions
+from app.utils.integration import generate_full_recommendation
+from app.utils.model_loader import ModelLoader
+
 # ========== PAGE CONFIG ==========
 logo_path = Path(__file__).parent / "assets" / "logo.png"
 
@@ -33,6 +37,22 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ========== LOAD ML MODELS (CACHED) ==========
+@st.cache_resource
+def load_ml_models():
+    """Load all pre-trained ML models and encoders once (cached)."""
+    try:
+        model_loader = ModelLoader()
+        model_loader.load_all()  # ✅ LOAD ALL MODELS FROM DISK
+        if not model_loader.is_ready():
+            raise Exception("Failed to load all required models")
+        return model_loader
+    except Exception as e:
+        st.error(f"Error loading models: {e}")
+        return None
+
+model_loader = load_ml_models()
 
 # ========== CUSTOM CSS ==========
 st.markdown("""
@@ -438,16 +458,33 @@ with st.sidebar:
     
     st.markdown("<div class='sidebar-header'>Your Profile</div>", unsafe_allow_html=True)
     
+    # ML Backend compatible skin type selector
     skin_type = st.selectbox(
         "Skin Type",
-        ["Oily", "Dry", "Combination", "Sensitive", "Normal"],
+        ["Combination", "Dry", "Normal", "Oily"],
         key="sidebar_skin_type_main"
     )
     
+    # Sensitivity level for ML model
+    sensitivity = st.radio(
+        "Skin Sensitivity",
+        ["No", "Yes"],
+        horizontal=True,
+        key="sidebar_sensitivity_main"
+    )
+    
+    # Primary skin concern for ML model (single selection for prediction)
+    primary_concern = st.selectbox(
+        "Primary Skin Concern",
+        ["Acne", "Dark Circles", "Dark Spots", "Dullness", "Hyperpigmentation", 
+         "Open Pores", "Redness", "Sun Tan", "Whiteheads/Blackheads", "Wrinkles"],
+        key="sidebar_concern_main"
+    )
+    
+    # Additional concerns (for reference)
     skin_concerns = st.multiselect(
-        "Skin Concerns",
-        ["Acne", "Dryness", "Oiliness", "Sensitivity", "Aging", "Hyperpigmentation", "Redness"],
-        default=["Acne"],
+        "Additional Concerns (Optional)",
+        ["Dryness", "Oiliness", "Aging", "Sensitivity", "Texture"],
         key="sidebar_concerns_main"
     )
     
@@ -523,104 +560,110 @@ with tab1:
     search_btn = st.button("🔍 Get Ingredient Recommendations", use_container_width=True, key="tab1_search_btn")
     
     if search_btn:
-        # ========== BLOCK 8: ORCHESTRATE RECOMMENDATION WORKFLOW ==========
-        # The coordinator handles all business logic:
-        # - Building user profiles
-        # - Converting between formats
-        # - Orchestrating calls to Block 1 and Block 4
-        # This keeps app.py focused on UI only!
-        
-        results = get_combined_recommendations(
-            skin_type=skin_type,
-            concerns=skin_concerns,
-            age=age,
-            alcohol_free=alcohol_free or filter_alcohol,
-            fragrance_free=fragrance_free or filter_fragrance,
-            vegan=vegan or filter_vegan,
-            cruelty_free=cruelty_free or filter_cruelty,
-            top_n=5
-        )
+        # ========== BLOCK 11: ML BACKEND INTEGRATION ==========
+        # Call the master integration function that combines:
+        # - Block 8: Predictions (ingredient + cluster)
+        # - Block 9: Products (top 3)
+        # - Block 10: Remedies (top 2)
         
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+        st.markdown("## 🎯 Your Personalized Skincare Recommendation")
         
-        # ========== DISPLAY RESULTS (Block 5: Integration UI) ==========
-        
-        # Display combined recommendations (Block 1 + Block 4)
-        display_combined_recommendations(
-            user_profile=results.user_profile.to_dict(),
-            recommendations=results.block1_results,
-            ml_result=results.block4_result,
-            show_comparison=True
-        )
-        
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-        
-        # ========== DETAILED BREAKDOWN (OPTIONAL) ==========
-        
-        with st.expander("📊 View Detailed Score Breakdown (Rule-Based)", expanded=False):
-            st.markdown("#### Rule-Based Scoring Details")
-            st.markdown(
-                "This section shows the detailed scoring breakdown from the rule-based engine, "
-                "analyzing factors like skin type, concerns, and age."
+        with st.spinner("Analyzing your skin profile and finding recommendations..."):
+            result = generate_full_recommendation(
+                skin=skin_type,
+                sensitivity=sensitivity,
+                concern=primary_concern,
+                model_loader=model_loader
             )
+        
+        if result and result['success']:
+            # ===== DISPLAY INGREDIENT PREDICTION =====
+            col1, col2, col3 = st.columns(3)
             
-            tab_breakdown1, tab_breakdown2, tab_breakdown3 = st.tabs([
-                f"#{results.block1_results[0].ingredient}",
-                f"#{results.block1_results[1].ingredient}",
-                f"#{results.block1_results[2].ingredient}"
-            ])
+            with col1:
+                st.markdown("""
+                <div style='background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); 
+                            padding: 20px; border-radius: 12px; border: 1.5px solid #d1d5db; text-align: center;'>
+                    <p style='color: #666666; font-size: 14px; margin: 0; font-weight: 500;'>RECOMMENDED INGREDIENT</p>
+                    <p style='color: #000000; font-size: 24px; margin: 10px 0; font-weight: 700;'>{}</p>
+                </div>
+                """.format(result['ingredient']), unsafe_allow_html=True)
             
-            with tab_breakdown1:
-                display_explainability_breakdown(results.block1_results[0])
+            with col2:
+                st.markdown("""
+                <div style='background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
+                            padding: 20px; border-radius: 12px; border: 1.5px solid #60a5fa; text-align: center;'>
+                    <p style='color: #0c2d6b; font-size: 14px; margin: 0; font-weight: 500;'>YOUR SKIN CLUSTER</p>
+                    <p style='color: #0c2d6b; font-size: 22px; margin: 10px 0; font-weight: 700;'>{}</p>
+                </div>
+                """.format(result['cluster_label']), unsafe_allow_html=True)
             
-            with tab_breakdown2:
-                display_explainability_breakdown(results.block1_results[1])
+            with col3:
+                st.markdown("""
+                <div style='background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); 
+                            padding: 20px; border-radius: 12px; border: 1.5px solid #86efac; text-align: center;'>
+                    <p style='color: #166534; font-size: 14px; margin: 0; font-weight: 500;'>STATUS</p>
+                    <p style='color: #166534; font-size: 22px; margin: 10px 0; font-weight: 700;'>✅ Ready</p>
+                </div>
+                """, unsafe_allow_html=True)
             
-            with tab_breakdown3:
-                display_explainability_breakdown(results.block1_results[2])
+            st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+            
+            # ===== DISPLAY PRODUCTS =====
+            # ✅ STEP 6: OUTPUT HANDLING
+            products = result.get('products', [])
+            if products and len(products) > 0:
+                st.markdown("### 💅 Top Products with This Ingredient")
+                
+                products_df = pd.DataFrame(products)
+                
+                # Display products in a nice table format
+                cols = st.columns(len(products[:3]))
+                for idx, product in enumerate(products[:3]):
+                    with cols[idx]:
+                        st.markdown(f"""
+                        <div class='product-card'>
+                            <h4 style='margin: 0 0 8px 0; color: #000000;'>{product.get('product_name', 'Unknown')}</h4>
+                            <p style='margin: 8px 0; color: #666666; font-size: 14px;'>
+                                <strong>Price:</strong> ${product.get('price', 'N/A')}
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+            else:
+                # ✅ GRACEFUL FALLBACK MESSAGE
+                st.info(f"ℹ️ Limited product data available for **{result.get('ingredient', 'this ingredient')}**. "
+                        "Consider searching for alternative products with similar key ingredients.")
+            
+            st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+            
+            # ===== DISPLAY REMEDIES =====
+            # ✅ STEP 6: OUTPUT HANDLING
+            remedies = result.get('remedies', [])
+            if remedies and len(remedies) > 0:
+                st.markdown("### 🌿 Home Remedies for Your Skin Concern")
+                
+                for idx, remedy in enumerate(remedies, 1):
+                    with st.expander(f"💚 Remedy {idx}: {remedy.get('Problem', 'Unknown')}", expanded=(idx == 1)):
+                        st.markdown(f"**Problem:** {remedy.get('Problem', 'N/A')}")
+                        st.markdown(f"**Category:** {remedy.get('Category', 'N/A')}")
+                        st.markdown(f"**Ingredients:** {remedy.get('Ingredients', 'N/A')}")
+                        st.markdown(f"**Usage:** {remedy.get('Usage', 'N/A')}")
+                        st.markdown(f"**Frequency:** {remedy.get('Frequency', 'N/A')}")
+            else:
+                # ✅ GRACEFUL FALLBACK MESSAGE
+                st.info(f"ℹ️ Limited remedy data available for **{result.get('ingredient', 'this ingredient')}**. "
+                        "Consult with a dermatologist for personalized home remedy recommendations.")
+            
+            st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+            
+            # Summary
+            st.markdown("<div class='success-badge'>✅ Complete recommendation generated! Share with your dermatologist for personalized advice.</div>", unsafe_allow_html=True)
         
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-        
-        # ========== ML MODEL PERFORMANCE INFO ==========
-        
-        with st.expander("🧠 ML Model Details & Performance", expanded=False):
-            st.markdown("#### Machine Learning Model Information")
-            st.markdown(
-                "This model uses K-Nearest Neighbors (KNN) trained on 50 skincare profiles "
-                "to predict ingredient recommendations based on similar user profiles."
-            )
-            st.divider()
-            display_ml_performance_metrics()
-        
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-        
-        # Market insights
-        st.markdown("### 📈 Market Insights")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            df_price = pd.DataFrame({
-                'Price Range': ['Rs. 0-500', 'Rs. 500-1000', 'Rs. 1000-2000', 'Rs. 2000+'],
-                'Count': [45, 67, 38, 20]
-            })
-            fig1 = px.bar(df_price, x='Price Range', y='Count', title="Product Price Distribution", 
-                         color_discrete_sequence=["#333333"],
-                         labels={'Count': 'Number of Products'})
-            fig1.update_layout(showlegend=False, hovermode='x unified')
-            st.plotly_chart(fig1, use_container_width=True)
-        
-        with col2:
-            df_brands = pd.DataFrame({
-                'Brand': ['CeraVe', 'Cetaphil', 'Neutrogena', 'Garnier', 'Olay'],
-                'Products': [45, 38, 35, 32, 28]
-            })
-            fig2 = px.bar(df_brands, x='Brand', y='Products', title="Top Skincare Brands", 
-                         color_discrete_sequence=["#555555"],
-                         labels={'Products': 'Number of Products'})
-            fig2.update_layout(showlegend=False, hovermode='x unified')
-            st.plotly_chart(fig2, use_container_width=True)
-        
-        st.markdown(f"<div class='success-badge'>✅ Found {len(results.block1_results)} personalized ingredient recommendations for your {skin_type} skin type!</div>", unsafe_allow_html=True)
+        else:
+            error_msg = result.get('error', 'Unknown error') if result else 'Failed to generate recommendation'
+            st.error(f"❌ Could not generate recommendation: {error_msg}")
+            st.info("Please check your input values and try again.")
 
 # ========== TAB 2: INGREDIENT ANALYZER ==========
 with tab2:
