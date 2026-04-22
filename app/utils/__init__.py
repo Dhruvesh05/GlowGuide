@@ -39,6 +39,12 @@ from app.utils.coordinator import (
     get_model_status,
 )
 
+from app.utils.routine_builder import (
+    generate_personalized_routine,
+    generate_routine_insights,
+    get_routine_products_from_dataset,
+)
+
 __all__ = [
     # Recommendations (Block 1)
     'get_recommendations',
@@ -70,4 +76,9 @@ __all__ = [
     'validate_sidebar_inputs',
     'get_dataset_info',
     'get_model_status',
+    
+    # Routine Builder
+    'generate_personalized_routine',
+    'generate_routine_insights',
+    'get_routine_products_from_dataset',
 ]

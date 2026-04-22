@@ -106,6 +106,9 @@ def generate_full_recommendation(
         ingredient = prediction.get('ingredient')
         cluster = prediction.get('cluster_number')
         cluster_label = prediction.get('cluster_label')
+        ingredient_confidence = prediction.get('ingredient_confidence', 0)
+        cluster_confidence = prediction.get('cluster_confidence', 0)
+        overall_confidence = prediction.get('overall_confidence', 0)
         
         if debug:
             print(f"✅ Prediction successful")
@@ -168,6 +171,9 @@ def generate_full_recommendation(
             'ingredient': ingredient,
             'cluster': cluster,
             'cluster_label': cluster_label,
+            'ingredient_confidence': ingredient_confidence,
+            'cluster_confidence': cluster_confidence,
+            'overall_confidence': overall_confidence,
             'products': products_list,
             'remedies': remedies_list,
             'success': True,

@@ -15,6 +15,7 @@ import plotly.graph_objects as go
 
 # Import utilities
 from app.utils import get_combined_recommendations
+from app.utils.products import get_product_link
 from app.components import (
     display_recommendations_grid,
     display_explainability_breakdown,
@@ -27,6 +28,10 @@ from app.components import (
 # Import ML backend functions
 from app.utils.integration import generate_full_recommendation
 from app.utils.model_loader import ModelLoader
+from app.utils.routine_builder import (
+    generate_personalized_routine,
+    generate_routine_insights
+)
 
 # ========== PAGE CONFIG ==========
 logo_path = Path(__file__).parent / "assets" / "logo.png"
@@ -433,9 +438,9 @@ col1, col2 = st.columns([1, 5])
 with col1:
     st.image(str(logo_path), width=90)
 with col2:
-    st.markdown("<h1 style='margin-top: 10px;'>✨ GlowGuide</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='margin-top: 10px;'>GlowGuide</h1>", unsafe_allow_html=True)
 
-st.markdown("<p style='text-align: center; color: #666666; font-size: 18px; margin-bottom: 28px; font-weight: 500; letter-spacing: 0.3px;'>🌟 Find the perfect skincare products based on your unique needs</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #666666; font-size: 18px; margin-bottom: 28px; font-weight: 500; letter-spacing: 0.3px;'>Find the perfect skincare products based on your unique needs</p>", unsafe_allow_html=True)
 
 st.markdown("""
 <style>
@@ -557,7 +562,7 @@ with tab1:
     with f4:
         filter_cruelty = st.checkbox("Cruelty-Free", key="tab1_filter_cruelty")
     
-    search_btn = st.button("🔍 Get Ingredient Recommendations", use_container_width=True, key="tab1_search_btn")
+    search_btn = st.button("Get Ingredient Recommendations", use_container_width=True, key="tab1_search_btn")
     
     if search_btn:
         # ========== BLOCK 11: ML BACKEND INTEGRATION ==========
@@ -567,7 +572,7 @@ with tab1:
         # - Block 10: Remedies (top 2)
         
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-        st.markdown("## 🎯 Your Personalized Skincare Recommendation")
+        st.markdown("## Your Personalized Skincare Recommendation")
         
         with st.spinner("Analyzing your skin profile and finding recommendations..."):
             result = generate_full_recommendation(
@@ -611,24 +616,73 @@ with tab1:
             st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
             
             # ===== DISPLAY PRODUCTS =====
-            # ✅ STEP 6: OUTPUT HANDLING
+            # ✅ STEP 3-4: DYNAMIC PRODUCT CARDS WITH SEARCH LINKS & IMAGES
             products = result.get('products', [])
             if products and len(products) > 0:
-                st.markdown("### 💅 Top Products with This Ingredient")
+                st.markdown("### Top Products with This Ingredient")
                 
-                products_df = pd.DataFrame(products)
-                
-                # Display products in a nice table format
+                # Create clickable product cards in a grid
                 cols = st.columns(len(products[:3]))
                 for idx, product in enumerate(products[:3]):
                     with cols[idx]:
+                        product_name = product.get('product_name', 'Unknown Product')
+                        price = product.get('price', 0)
+                        image_url = product.get('image_url', 'https://via.placeholder.com/150?text=Product')
+                        
+                        # Get search link (hybrid system: curated or dynamic)
+                        search_link = get_product_link(product_name)
+                        
+                        # Display product card with image
                         st.markdown(f"""
-                        <div class='product-card'>
-                            <h4 style='margin: 0 0 8px 0; color: #000000;'>{product.get('product_name', 'Unknown')}</h4>
-                            <p style='margin: 8px 0; color: #666666; font-size: 14px;'>
-                                <strong>Price:</strong> ${product.get('price', 'N/A')}
-                            </p>
-                        </div>
+                        <a href="{search_link}" target="_blank" style="text-decoration: none; cursor: pointer;">
+                            <div style="
+                                border: 1px solid #e5e7eb;
+                                padding: 16px;
+                                border-radius: 12px;
+                                margin-bottom: 12px;
+                                background: #ffffff;
+                                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+                                transition: all 0.2s ease-in-out;
+                                text-align: center;
+                            ">
+                                <img src="{image_url}" style="
+                                    width: 120px;
+                                    height: 120px;
+                                    object-fit: contain;
+                                    margin-bottom: 10px;
+                                    border-radius: 8px;
+                                " alt="{product_name}"/>
+                                
+                                <h4 style="
+                                    margin: 0;
+                                    color: #111827;
+                                    font-size: 16px;
+                                    font-weight: 600;
+                                    margin-bottom: 6px;
+                                    line-height: 1.4;
+                                ">
+                                    {product_name}
+                                </h4>
+                                
+                                <p style="
+                                    margin: 0;
+                                    color: #6b7280;
+                                    font-size: 14px;
+                                    margin-bottom: 8px;
+                                ">
+                                    ₹{price:.0f}
+                                </p>
+                                
+                                <p style="
+                                    margin: 0;
+                                    font-size: 13px;
+                                    color: #2563eb;
+                                    font-weight: 600;
+                                ">
+                                    🔍 Click to view product
+                                </p>
+                            </div>
+                        </a>
                         """, unsafe_allow_html=True)
             else:
                 # ✅ GRACEFUL FALLBACK MESSAGE
@@ -641,10 +695,10 @@ with tab1:
             # ✅ STEP 6: OUTPUT HANDLING
             remedies = result.get('remedies', [])
             if remedies and len(remedies) > 0:
-                st.markdown("### 🌿 Home Remedies for Your Skin Concern")
+                st.markdown("### Home Remedies for Your Skin Concern")
                 
                 for idx, remedy in enumerate(remedies, 1):
-                    with st.expander(f"💚 Remedy {idx}: {remedy.get('Problem', 'Unknown')}", expanded=(idx == 1)):
+                    with st.expander(f"Remedy {idx}: {remedy.get('Problem', 'Unknown')}", expanded=(idx == 1)):
                         st.markdown(f"**Problem:** {remedy.get('Problem', 'N/A')}")
                         st.markdown(f"**Category:** {remedy.get('Category', 'N/A')}")
                         st.markdown(f"**Ingredients:** {remedy.get('Ingredients', 'N/A')}")
@@ -754,70 +808,366 @@ with tab2:
 
 # ========== TAB 3: ROUTINE BUILDER ==========
 with tab3:
-    st.markdown("## Build Your Skincare Routine")
+    st.markdown("## Your Personalized Skincare Routine")
+    st.markdown("Based on your skin profile and ML analysis, we'll create a routine using trained dataset recommendations.")
     
-    routine_type = st.radio(
-        "Choose routine time",
-        ["Morning Routine", "Night Routine"],
-        horizontal=True,
-        key="tab3_routine_type"
-    )
+    col1, col2 = st.columns(2)
     
-    st.markdown("### Select routine steps (in order)")
+    with col1:
+        routine_type = st.radio(
+            "Choose routine time",
+            ["Morning Routine", "Night Routine"],
+            horizontal=True,
+            key="tab3_routine_type"
+        )
     
-    morning_steps = ["Cleanser", "Toner", "Essence", "Serum", "Eye Cream", "Moisturizer", "Sunscreen"]
-    night_steps = ["Cleanser", "Toner", "Essence", "Serum", "Eye Cream", "Moisturizer", "Sleep Mask"]
-    
-    steps = morning_steps if routine_type == "Morning Routine" else night_steps
-    
-    selected_steps = st.multiselect(
-        "Steps",
-        steps,
-        default=steps[:5],
-        key="tab3_steps"
-    )
-    
-    st.markdown("### Routine Preferences")
-    pref1, pref2 = st.columns(2)
-    with pref1:
-        time_available = st.slider("Time Available (minutes)", 5, 30, 10, key="tab3_time")
-    with pref2:
+    with col2:
         routine_focus = st.selectbox(
             "Focus Area",
             ["Hydration", "Anti-aging", "Acne Control", "Brightening", "Sensitive Care"],
             key="tab3_focus"
         )
     
-    generate_btn = st.button("Generate Routine", use_container_width=True, key="tab3_generate_btn")
+    generate_btn = st.button("Generate Personalized Routine", use_container_width=True, key="tab3_generate_btn")
     
     if generate_btn:
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-        st.markdown(f"## Your {routine_type}")
-        
-        routine_data = {
-            "Step": ["1. Cleanser", "2. Toner", "3. Serum", "4. Moisturizer", "5. Sunscreen"],
-            "Product": ["CeraVe Foaming", "Witch Hazel", "Vitamin C", "CeraVe Lotion", "SPF 50"],
-            "Time (min)": [2, 1, 2, 2, 2],
-            "Benefit": ["Remove impurities", "Balance pH", "Brightening", "Hydrate", "Protect"]
-        }
-        
-        st.dataframe(
-            pd.DataFrame(routine_data),
-            use_container_width=True,
-            hide_index=True
-        )
-        
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-        st.markdown("### Tips for Better Results")
-        st.markdown("""
-        <div class='info-badge'>
-            <strong>Apply products in order:</strong> Lightest to heaviest consistency<br><br>
-            <strong>Wait between products:</strong> 1-2 minutes between each application<br><br>
-            <strong>Be consistent:</strong> Results become visible in 4-6 weeks of regular use
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("<div class='success-badge'>Routine created successfully! Save this for reference.</div>", unsafe_allow_html=True)
+        with st.spinner("Analyzing your profile and generating personalized routine..."):
+            # Step 1: Get ML prediction using user's profile
+            ml_result = generate_full_recommendation(
+                skin=skin_type,
+                sensitivity=sensitivity,
+                concern=primary_concern,
+                model_loader=model_loader
+            )
+            
+            if ml_result and ml_result['success']:
+                # Step 2: Generate routine based on ML prediction
+                user_profile = {
+                    'skin_type': skin_type,
+                    'sensitivity': sensitivity,
+                    'primary_concern': primary_concern,
+                    'age': age,
+                    'skin_concerns': skin_concerns,
+                    'budget_min': budget_min
+                }
+                
+                routine_type_label = "Morning" if "Morning" in routine_type else "Night"
+                
+                routine = generate_personalized_routine(
+                    user_profile=user_profile,
+                    ml_prediction=ml_result,
+                    routine_type=routine_type_label,
+                    routine_focus=routine_focus
+                )
+                
+                # Step 3: Generate detailed insights
+                insights = generate_routine_insights(
+                    user_profile=user_profile,
+                    ml_prediction=ml_result,
+                    routine=routine
+                )
+                
+                if routine['success']:
+                    # ===== DISPLAY ROUTINE OVERVIEW =====
+                    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+                    st.markdown(f"## Your {routine_type}")
+                    
+                    # Display routine summary cards
+                    summary_col1, summary_col2, summary_col3 = st.columns(3)
+                    
+                    with summary_col1:
+                        st.markdown(f"""
+                        <div style='background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
+                                    padding: 20px; border-radius: 12px; border: 1.5px solid #60a5fa; text-align: center;'>
+                            <p style='color: #0c2d6b; font-size: 14px; margin: 0; font-weight: 500;'>RECOMMENDED INGREDIENT</p>
+                            <p style='color: #0c2d6b; font-size: 24px; margin: 10px 0; font-weight: 700;'>{ml_result['ingredient']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with summary_col2:
+                        st.markdown(f"""
+                        <div style='background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); 
+                                    padding: 20px; border-radius: 12px; border: 1.5px solid #d1d5db; text-align: center;'>
+                            <p style='color: #374151; font-size: 14px; margin: 0; font-weight: 500;'>ROUTINE LENGTH</p>
+                            <p style='color: #111827; font-size: 24px; margin: 10px 0; font-weight: 700;'>{routine['total_time']} min</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with summary_col3:
+                        st.markdown(f"""
+                        <div style='background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); 
+                                    padding: 20px; border-radius: 12px; border: 1.5px solid #86efac; text-align: center;'>
+                            <p style='color: #166534; font-size: 14px; margin: 0; font-weight: 500;'>SKIN TYPE</p>
+                            <p style='color: #166534; font-size: 24px; margin: 10px 0; font-weight: 700;'>{skin_type}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+                    
+                    # ===== VISUALIZATION 1: ROUTINE TIMELINE =====
+                    st.markdown("### Routine Timeline - Time Allocation per Step")
+                    
+                    timeline_data = []
+                    for step in routine['steps']:
+                        timeline_data.append({
+                            'Step': f"{step['step_num']}. {step['product_type']}",
+                            'Time': step['time'],
+                            'Product': step['name'][:30]
+                        })
+                    
+                    timeline_df = pd.DataFrame(timeline_data)
+                    fig_timeline = px.bar(
+                        timeline_df,
+                        x='Time',
+                        y='Step',
+                        orientation='h',
+                        title='Time Commitment per Step',
+                        labels={'Time': 'Minutes', 'Step': 'Routine Step'},
+                        color='Time',
+                        color_continuous_scale='Blues',
+                        text='Time'
+                    )
+                    fig_timeline.update_traces(textposition='auto')
+                    fig_timeline.update_layout(
+                        height=300,
+                        showlegend=False,
+                        xaxis_title='Minutes',
+                        yaxis_title='',
+                        hovermode='y unified'
+                    )
+                    st.plotly_chart(fig_timeline, use_container_width=True)
+                    
+                    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+                    
+                    # ===== DISPLAY ROUTINE STEPS TABLE =====
+                    st.markdown("### Routine Steps (In Order)")
+                    
+                    routine_table_data = []
+                    for step in routine['steps']:
+                        routine_table_data.append({
+                            'Step': f"{step['step_num']}. {step['product_type']}",
+                            'Product': step['name'],
+                            'Time (min)': step['time'],
+                            'Benefit': step['benefit']
+                        })
+                    
+                    routine_df = pd.DataFrame(routine_table_data)
+                    st.dataframe(routine_df, use_container_width=True, hide_index=True)
+                    
+                    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+                    
+                    # ===== VISUALIZATION 2: PRODUCT BENEFITS DISTRIBUTION =====
+                    st.markdown("### Skin Concern Coverage - How This Routine Addresses Your Needs")
+                    
+                    concern_mapping = {
+                        'Acne': 0,
+                        'Dark Circles': 0,
+                        'Dark Spots': 0,
+                        'Dullness': 0,
+                        'Hyperpigmentation': 0,
+                        'Open Pores': 0,
+                        'Redness': 0,
+                        'Sun Tan': 0,
+                        'Whiteheads/Blackheads': 0,
+                        'Wrinkles': 0
+                    }
+                    
+                    benefit_keywords = {
+                        'Acne': ['clarifying', 'breakout', 'acne', 'pore', 'control'],
+                        'Dark Circles': ['dark circle', 'eye', 'fine line'],
+                        'Dark Spots': ['brightening', 'dark', 'spot', 'hyperpigmentation'],
+                        'Dullness': ['brightening', 'glow', 'radiant'],
+                        'Wrinkles': ['anti-aging', 'firming', 'collagen', 'fine line'],
+                        'Redness': ['soothing', 'calming', 'sensitive'],
+                    }
+                    
+                    for step in routine['steps']:
+                        benefit_lower = step['benefit'].lower()
+                        for concern, keywords in benefit_keywords.items():
+                            if any(kw in benefit_lower for kw in keywords):
+                                if concern in concern_mapping:
+                                    concern_mapping[concern] += 1
+                    
+                    concern_data = pd.DataFrame([
+                        {'Concern': k, 'Coverage': v} 
+                        for k, v in concern_mapping.items() 
+                        if v > 0
+                    ])
+                    
+                    if len(concern_data) > 0:
+                        fig_concerns = px.bar(
+                            concern_data,
+                            x='Concern',
+                            y='Coverage',
+                            title='Skin Concern Coverage by This Routine',
+                            labels={'Coverage': 'Number of Steps Addressing'},
+                            color='Coverage',
+                            color_continuous_scale='Greens',
+                            text='Coverage'
+                        )
+                        fig_concerns.update_traces(textposition='auto')
+                        fig_concerns.update_layout(
+                            height=350,
+                            showlegend=False,
+                            xaxis_tickangle=-45,
+                            hovermode='x unified'
+                        )
+                        st.plotly_chart(fig_concerns, use_container_width=True)
+                    
+                    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+                    
+                    # ===== VISUALIZATION 3: ROUTINE COMPOSITION =====
+                    st.markdown("### Routine Composition - Product Types Distribution")
+                    
+                    product_types = [step['product_type'] for step in routine['steps']]
+                    product_type_counts = pd.Series(product_types).value_counts().reset_index()
+                    product_type_counts.columns = ['Product Type', 'Count']
+                    
+                    fig_composition = px.pie(
+                        product_type_counts,
+                        names='Product Type',
+                        values='Count',
+                        title='Product Types in Your Routine',
+                        color_discrete_sequence=['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981']
+                    )
+                    fig_composition.update_layout(height=350)
+                    st.plotly_chart(fig_composition, use_container_width=True)
+                    
+                    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+                    
+                    # ===== DISPLAY DETAILED STEP BREAKDOWN =====
+                    st.markdown("### Step-by-Step Breakdown")
+                    
+                    for step in routine['steps']:
+                        with st.expander(
+                            f"Step {step['step_num']}: {step['product_type']} - {step['name']}",
+                            expanded=(step['step_num'] == 1)
+                        ):
+                            col1, col2 = st.columns([2, 1])
+                            
+                            with col1:
+                                st.markdown(f"**Why This Product?**")
+                                st.markdown(f"{step['reason']}")
+                                st.markdown(f"\n**Key Benefit:** {step['benefit']}")
+                            
+                            with col2:
+                                st.markdown(f"**Application Time:** {step['time']} minutes")
+                                st.markdown(f"**Product Type:** {step['product_type']}")
+                    
+                    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+                    
+                    # ===== DISPLAY TIPS =====
+                    st.markdown("### Tips for Better Results")
+                    
+                    tips_html = "<div class='info-badge'>"
+                    for idx, tip in enumerate(routine['tips'], 1):
+                        tips_html += f"<strong>Tip {idx}:</strong> {tip}<br><br>"
+                    tips_html += "</div>"
+                    
+                    st.markdown(tips_html, unsafe_allow_html=True)
+                    
+                    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+                    
+                    # ===== VISUALIZATION 4: ML CONFIDENCE & PERSONALIZATION FACTORS =====
+                    st.markdown("### Personalization Analysis - ML Model Insights")
+                    
+                    col_viz1, col_viz2 = st.columns(2)
+                    
+                    with col_viz1:
+                        st.markdown("#### ML Model Confidence")
+                        
+                        confidence_data = pd.DataFrame({
+                            'Metric': ['Ingredient Accuracy', 'Cluster Assignment', 'Overall Recommendation'],
+                            'Score': [
+                                ml_result.get('ingredient_confidence', 0),
+                                ml_result.get('cluster_confidence', 0),
+                                ml_result.get('overall_confidence', 0)
+                            ]
+                        })
+                        
+                        fig_confidence = px.bar(
+                            confidence_data,
+                            x='Score',
+                            y='Metric',
+                            orientation='h',
+                            title='Model Performance Metrics',
+                            color='Score',
+                            color_continuous_scale='Viridis',
+                            text='Score'
+                        )
+                        fig_confidence.update_traces(textposition='auto')
+                        fig_confidence.update_layout(
+                            height=300,
+                            showlegend=False,
+                            xaxis_title='Confidence Score (%)',
+                            yaxis_title=''
+                        )
+                        st.plotly_chart(fig_confidence, use_container_width=True)
+                    
+                    with col_viz2:
+                        st.markdown("#### Input Profile Summary")
+                        
+                        profile_metrics = {
+                            'Skin Type': skin_type,
+                            'Sensitivity': sensitivity,
+                            'Primary Concern': primary_concern,
+                            'Age': str(age),
+                            'Skin Cluster': ml_result['cluster_label']
+                        }
+                        
+                        profile_text = "<div style='padding: 15px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;'>"
+                        for key, value in profile_metrics.items():
+                            profile_text += f"<p style='margin: 8px 0;'><strong>{key}:</strong> {value}</p>"
+                        profile_text += "</div>"
+                        
+                        st.markdown(profile_text, unsafe_allow_html=True)
+                    
+                    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+                    
+                    # ===== DISPLAY DETAILED INSIGHTS =====
+                    st.markdown("### Routine Personalization Details")
+                    
+                    # Input Summary
+                    with st.expander("Your Input Profile", expanded=True):
+                        input_cols = st.columns(2)
+                        with input_cols[0]:
+                            st.markdown("**Skin Profile:**")
+                            for key, value in insights['input_summary'].items():
+                                st.markdown(f"• **{key.replace('_', ' ').title()}:** {value}")
+                        
+                        with input_cols[1]:
+                            st.markdown("**ML Analysis:**")
+                            for key, value in insights['ml_analysis'].items():
+                                st.markdown(f"• **{key.replace('_', ' ').title()}:** {value}")
+                    
+                    # Personalization Factors
+                    with st.expander("Personalization Factors", expanded=True):
+                        for factor in insights['personalization_factors']:
+                            st.markdown(f"{factor}")
+                    
+                    # Routine Rationale
+                    with st.expander("Why This Routine?", expanded=True):
+                        st.markdown(insights['routine_rationale'])
+                    
+                    # Effectiveness Timeline
+                    with st.expander("Expected Results Timeline", expanded=False):
+                        st.markdown(f"**You can expect to see changes in:** {insights['effectiveness_timeline']}")
+                        st.markdown(
+                            "\n**Note:** Consistency is key. Use this routine daily for best results. "
+                            "Skin typically needs 4-6 weeks of consistent care to show visible improvements."
+                        )
+                    
+                    # Key Insights
+                    with st.expander("Key Insights & Data Points", expanded=True):
+                        for insight in insights['key_insights']:
+                            st.markdown(f"\n{insight}")
+                    
+                    st.markdown("<div class='success-badge'>Routine created successfully! Save this page for reference and start using your personalized routine today.</div>", unsafe_allow_html=True)
+                
+                else:
+                    st.error(f"Failed to generate routine: {routine.get('error', 'Unknown error')}")
+            else:
+                st.error(f"Could not analyze your profile. Error: {ml_result.get('error', 'Unknown error') if ml_result else 'Model not loaded'}")
 
 # ========== TAB 4: INSIGHTS (EDA DASHBOARD) ==========
 with tab_insights:

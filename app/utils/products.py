@@ -148,7 +148,8 @@ class ProductRecommender:
             for _, row in matches.iterrows():
                 results.append({
                     'product_name': str(row.get('product_name', 'Unknown')),
-                    'price': float(row.get('price', 0.0))
+                    'price': float(row.get('price', 0.0)),
+                    'image_url': str(row.get('image_url', 'https://via.placeholder.com/150?text=Product'))
                 })
             
             # Pad to 3 if needed
@@ -156,7 +157,8 @@ class ProductRecommender:
                 random_product = self.products_df.sample(n=1, random_state=None).iloc[0]
                 results.append({
                     'product_name': str(random_product['product_name']),
-                    'price': float(random_product['price'])
+                    'price': float(random_product['price']),
+                    'image_url': str(random_product.get('image_url', 'https://via.placeholder.com/150?text=Product'))
                 })
             
             if self.debug:
@@ -265,6 +267,80 @@ def get_products(ingredient: str, debug: bool = False) -> Optional[List[Dict[str
     except Exception as e:
         print(f"❌ Error: {e}")
         return None
+
+
+# ========== STEP 1 & 2: DYNAMIC SEARCH LINKS WITH HYBRID SYSTEM ==========
+
+# Special curated product links for popular products (hybrid system)
+SPECIAL_PRODUCT_LINKS = {
+    "Minimalist 2% Salicylic Acid Serum": "https://www.google.com/search?q=buy+Minimalist+Salicylic+Acid+Serum",
+    "Cetaphil Moisturizing Cream": "https://www.google.com/search?q=buy+Cetaphil+Moisturizing+Cream",
+    "Neutrogena Hydro Boost Hydrating Tint": "https://www.google.com/search?q=buy+Neutrogena+Hydro+Boost",
+    "CeraVe Facial Moisturizing Lotion": "https://www.google.com/search?q=buy+CeraVe+Facial+Moisturizing+Lotion",
+    "The Ordinary Niacinamide 10% + Zinc 1%": "https://www.google.com/search?q=buy+The+Ordinary+Niacinamide",
+}
+
+
+def generate_product_link(product_name: str) -> str:
+    """
+    Generate dynamic Google search link for any product.
+    
+    Steps:
+    - Replace spaces with "+"
+    - Return formatted Google search URL
+    
+    Args:
+        product_name: Name of the product
+    
+    Returns:
+        Complete Google search URL for buying the product
+    
+    Example:
+        >>> link = generate_product_link("Minimalist Salicylic Acid Serum")
+        >>> print(link)
+        "https://www.google.com/search?q=buy+Minimalist+Salicylic+Acid+Serum"
+    """
+    if not product_name or len(product_name.strip()) == 0:
+        return "https://www.google.com/search?q=skincare+products"
+    
+    # Replace spaces with "+" and format for URL
+    formatted_name = product_name.strip().replace(" ", "+")
+    return f"https://www.google.com/search?q=buy+{formatted_name}"
+
+
+def get_product_link(product_name: str) -> str:
+    """
+    Hybrid system: Get curated link if exists, otherwise generate dynamic link.
+    
+    Logic:
+    - Check if product in special_product_links dictionary
+    - If yes → use predefined link (preferred)
+    - If no → dynamically generate Google search link
+    
+    Args:
+        product_name: Name of the product
+    
+    Returns:
+        Google search URL (either curated or dynamically generated)
+    
+    Example:
+        >>> link = get_product_link("Minimalist 2% Salicylic Acid Serum")
+        >>> print(link)
+        "https://www.google.com/search?q=buy+Minimalist+Salicylic+Acid+Serum"
+        
+        >>> link = get_product_link("Unknown New Product")
+        >>> print(link)
+        "https://www.google.com/search?q=buy+Unknown+New+Product"
+    """
+    if not product_name:
+        return "https://www.google.com/search?q=skincare+products"
+    
+    # Check if product has curated link
+    if product_name in SPECIAL_PRODUCT_LINKS:
+        return SPECIAL_PRODUCT_LINKS[product_name]
+    
+    # Fallback to dynamic generation
+    return generate_product_link(product_name)
 
 
 def main():

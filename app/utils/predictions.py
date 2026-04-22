@@ -88,9 +88,10 @@ class PredictionEngine:
         encoded_skin: int,
         encoded_sens: int,
         encoded_concern: int
-    ) -> Optional[str]:
+    ) -> Optional[Tuple[str, float]]:
         """
         Predict ingredient using KNN model and decode result.
+        Also returns confidence score based on distances.
         
         Args:
             encoded_skin: Encoded skin type
@@ -98,7 +99,7 @@ class PredictionEngine:
             encoded_concern: Encoded concern
         
         Returns:
-            Decoded ingredient string or None if prediction fails
+            Tuple of (Decoded ingredient string, confidence score 0-100) or None if prediction fails
         """
         try:
             # Get KNN model and target encoder
@@ -109,14 +110,23 @@ class PredictionEngine:
                 print("❌ Error: KNN model or target encoder not loaded")
                 return None
             
-            # Make prediction
+            # Make prediction with distances
             features = [[encoded_skin, encoded_sens, encoded_concern]]
             predicted_encoded = knn_model.predict(features)[0]
+            
+            # Get distances to nearest neighbors for confidence
+            distances, indices = knn_model.kneighbors(features)
+            closest_distance = distances[0][0]
+            
+            # Calculate confidence: closer neighbors = higher confidence
+            # Normalize distance to 0-100 range (inverted: smaller distance = higher confidence)
+            max_distance = 5.0  # Max expected distance in feature space
+            confidence = max(0, min(100, 100 * (1 - (closest_distance / max_distance))))
             
             # Decode to ingredient name
             ingredient = le_target.inverse_transform([predicted_encoded])[0]
             
-            return ingredient
+            return ingredient, confidence
         
         except Exception as e:
             print(f"❌ Error predicting ingredient: {e}")
@@ -219,24 +229,32 @@ class PredictionEngine:
         
         encoded_skin, encoded_sens, encoded_concern = encoded
         
-        # Step 2-3: Predict and decode ingredient
-        ingredient = self.predict_ingredient(encoded_skin, encoded_sens, encoded_concern)
-        if ingredient is None:
+        # Step 2-3: Predict and decode ingredient with confidence
+        ingredient_result = self.predict_ingredient(encoded_skin, encoded_sens, encoded_concern)
+        if ingredient_result is None:
             return {
                 'ingredient': None,
+                'ingredient_confidence': 0,
                 'cluster_number': None,
                 'cluster_label': None,
+                'cluster_confidence': 0,
+                'overall_confidence': 0,
                 'success': False,
                 'error': 'Failed to predict ingredient'
             }
+        
+        ingredient, ingredient_confidence = ingredient_result
         
         # Step 4: Predict cluster
         cluster = self.predict_cluster(encoded_skin, encoded_sens, encoded_concern)
         if cluster is None:
             return {
-                'ingredient': None,
+                'ingredient': ingredient,
+                'ingredient_confidence': ingredient_confidence,
                 'cluster_number': None,
                 'cluster_label': None,
+                'cluster_confidence': 0,
+                'overall_confidence': 0,
                 'success': False,
                 'error': 'Failed to predict cluster'
             }
@@ -244,11 +262,31 @@ class PredictionEngine:
         # Step 5: Map cluster to label
         cluster_label = self.map_cluster_to_label(cluster)
         
-        # Step 6: Return results
+        # Estimate cluster confidence from KMeans inertia
+        try:
+            kmeans_model = self.loader.get_model('kmeans_model')
+            if kmeans_model is not None:
+                features = [[encoded_skin, encoded_sens, encoded_concern]]
+                distances = kmeans_model.transform(features)
+                cluster_distance = distances[0][cluster]
+                max_cluster_distance = 10.0
+                cluster_confidence = max(0, min(100, 100 * (1 - (cluster_distance / max_cluster_distance))))
+            else:
+                cluster_confidence = 75.0
+        except:
+            cluster_confidence = 75.0
+        
+        # Calculate overall confidence
+        overall_confidence = (ingredient_confidence + cluster_confidence) / 2
+        
+        # Step 6: Return results with confidence scores
         return {
             'ingredient': ingredient,
+            'ingredient_confidence': round(ingredient_confidence, 2),
             'cluster_number': cluster,
             'cluster_label': cluster_label,
+            'cluster_confidence': round(cluster_confidence, 2),
+            'overall_confidence': round(overall_confidence, 2),
             'success': True,
             'error': None
         }
