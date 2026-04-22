@@ -43,10 +43,80 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ========== FILE PATH VALIDATION ==========
+def verify_required_files():
+    """
+    Verify that all required data and model files exist.
+    Uses relative paths for Streamlit Cloud compatibility.
+    
+    Files required:
+    - data/celestia_clean.csv
+    - data/product.csv
+    - data/remedies.csv
+    - models/knn_model.pkl
+    - models/kmeans_model.pkl
+    - models/le_skin.pkl, le_sens.pkl, le_concern.pkl, le_target.pkl
+    
+    Deployment: Works on both local and Streamlit Cloud.
+    GitHub: All files are tracked (no .gitignore blocking).
+    """
+    base_dir = Path(__file__).parent.parent
+    
+    # Check data files
+    data_files = [
+        "celestia_clean.csv",
+        "product.csv",
+        "remedies.csv"
+    ]
+    
+    # Check model files
+    model_files = [
+        "knn_model.pkl",
+        "kmeans_model.pkl",
+        "le_skin.pkl",
+        "le_sens.pkl",
+        "le_concern.pkl",
+        "le_target.pkl"
+    ]
+    
+    missing_data = []
+    for f in data_files:
+        path = base_dir / "data" / f
+        if not path.exists():
+            missing_data.append(f"data/{f}")
+    
+    missing_models = []
+    for f in model_files:
+        path = base_dir / "models" / f
+        if not path.exists():
+            missing_models.append(f"models/{f}")
+    
+    if missing_data or missing_models:
+        error_msg = "⚠️ Missing Required Files:\n"
+        if missing_data:
+            error_msg += f"\n📊 Data files: {', '.join(missing_data)}"
+        if missing_models:
+            error_msg += f"\n🤖 Model files: {', '.join(missing_models)}"
+        error_msg += "\n\nTo fix:\n"
+        error_msg += "1. Ensure files exist in GitHub repo\n"
+        error_msg += "2. Run: git add data/ models/\n"
+        error_msg += "3. Run: git commit -m 'Add data and models'\n"
+        error_msg += "4. Run: git push\n"
+        error_msg += "5. Redeploy Streamlit Cloud app\n"
+        return False, error_msg
+    
+    return True, "✅ All required files found"
+
 # ========== LOAD ML MODELS (CACHED) ==========
 @st.cache_resource
 def load_ml_models():
     """Load all pre-trained ML models and encoders once (cached)."""
+    # Verify files exist first
+    files_ok, status_msg = verify_required_files()
+    if not files_ok:
+        st.error(status_msg)
+        return None
+    
     try:
         model_loader = ModelLoader()
         model_loader.load_all()  # ✅ LOAD ALL MODELS FROM DISK
@@ -54,7 +124,8 @@ def load_ml_models():
             raise Exception("Failed to load all required models")
         return model_loader
     except Exception as e:
-        st.error(f"Error loading models: {e}")
+        st.error(f"❌ Error loading models: {e}")
+        st.info("💡 Tip: Ensure models/ folder has all .pkl files")
         return None
 
 model_loader = load_ml_models()

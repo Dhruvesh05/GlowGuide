@@ -42,12 +42,12 @@ class ModelLoader:
         Initialize ModelLoader.
         
         Args:
-            data_dir (str): Directory to load models from. Default: data/ folder
+            data_dir (str): Directory to load models from. Default: models/ folder
         """
         if data_dir is None:
-            # Use data/ folder in project root
+            # Use models/ folder in project root
             base_dir = Path(__file__).parent.parent.parent
-            data_dir = base_dir / "data"
+            data_dir = base_dir / "models"
         else:
             data_dir = Path(data_dir)
         

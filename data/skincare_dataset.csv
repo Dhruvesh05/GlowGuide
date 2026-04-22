@@ -1,0 +1,51 @@
+SkinType,Acne,Dryness,Sensitivity,Aging,RecommendedIngredient
+Oily,1,0,0,0,Salicylic Acid
+Oily,1,0,0,0,Salicylic Acid
+Oily,1,0,0,1,Salicylic Acid
+Oily,1,0,0,1,Retinol
+Oily,1,0,1,0,Niacinamide
+Oily,1,0,1,1,Niacinamide
+Oily,1,1,0,0,Niacinamide
+Oily,1,1,0,1,Niacinamide
+Oily,0,0,0,0,Salicylic Acid
+Oily,0,0,0,1,Retinol
+Oily,0,0,1,0,Niacinamide
+Oily,0,0,1,1,Niacinamide
+Oily,0,1,0,1,Hyaluronic Acid
+Oily,0,1,1,1,Hyaluronic Acid
+Dry,0,1,0,0,Hyaluronic Acid
+Dry,0,1,0,0,Hyaluronic Acid
+Dry,0,1,0,1,Hyaluronic Acid
+Dry,0,1,0,1,Retinol
+Dry,0,1,1,0,Hyaluronic Acid
+Dry,0,1,1,0,Niacinamide
+Dry,0,1,1,1,Retinol
+Dry,0,1,1,1,Hyaluronic Acid
+Dry,1,1,0,0,Niacinamide
+Dry,1,1,0,1,Retinol
+Dry,1,1,1,0,Niacinamide
+Dry,1,1,1,1,Retinol
+Dry,0,0,1,1,Retinol
+Dry,0,0,0,1,Retinol
+Combination,1,0,0,0,Salicylic Acid
+Combination,1,0,0,1,Retinol
+Combination,1,1,0,0,Niacinamide
+Combination,1,1,0,1,Niacinamide
+Combination,1,0,1,0,Niacinamide
+Combination,1,0,1,1,Niacinamide
+Combination,0,1,0,1,Hyaluronic Acid
+Combination,0,1,1,0,Hyaluronic Acid
+Combination,0,1,1,1,Hyaluronic Acid
+Combination,0,0,1,0,Niacinamide
+Combination,0,0,1,1,Retinol
+Combination,0,0,0,1,Retinol
+Sensitive,0,1,1,0,Hyaluronic Acid
+Sensitive,0,1,1,0,Niacinamide
+Sensitive,1,1,1,0,Niacinamide
+Sensitive,1,1,1,1,Hyaluronic Acid
+Sensitive,0,1,1,1,Retinol
+Sensitive,0,0,1,0,Niacinamide
+Sensitive,0,0,1,1,Retinol
+Sensitive,1,0,1,1,Niacinamide
+Sensitive,1,0,1,0,Niacinamide
+Sensitive,0,1,0,0,Hyaluronic Acid
