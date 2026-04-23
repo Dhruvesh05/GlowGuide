@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """GlowGuide - Smart Skincare Recommender with Minimal Color Theme"""
 
 import sys
@@ -35,6 +35,15 @@ from app.utils.routine_builder import (
 
 # ========== PAGE CONFIG ==========
 logo_path = Path(__file__).parent / "assets" / "logo.png"
+
+# Encode logo as base64 data URI so it renders correctly over HTTP
+import base64 as _b64
+try:
+    with open(logo_path, "rb") as _f:
+        _logo_b64 = _b64.b64encode(_f.read()).decode()
+    LOGO_DATA_URI = f"data:image/png;base64,{_logo_b64}"
+except Exception:
+    LOGO_DATA_URI = ""  # graceful fallback if file missing
 
 st.set_page_config(
     page_title="GlowGuide - Skincare Assistant",
@@ -130,622 +139,619 @@ def load_ml_models():
 
 model_loader = load_ml_models()
 
+# ========== SMOOTH SCROLL + SCROLL-REVEAL ANIMATION (JS) ==========
+st.markdown("""
+<script>
+(function() {
+  // Wait until Streamlit has finished rendering
+  function initScrollReveal() {
+    var style = document.createElement('style');
+    style.textContent = `
+      .reveal-section {
+        opacity: 0;
+        transform: translateY(28px);
+        transition: opacity 0.55s cubic-bezier(0.4,0,0.2,1),
+                    transform 0.55s cubic-bezier(0.4,0,0.2,1);
+      }
+      .reveal-section.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    `;
+    document.head.appendChild(style);
+
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+        }
+      });
+    }, { threshold: 0.08 });
+
+    function tagAndObserve() {
+      var containers = document.querySelectorAll(
+        '.element-container, [data-testid="stMarkdownContainer"], [data-testid="metric-container"], [data-testid="stExpander"]'
+      );
+      containers.forEach(function(el) {
+        if (!el.classList.contains('reveal-section')) {
+          el.classList.add('reveal-section');
+          observer.observe(el);
+        }
+      });
+    }
+
+    // Run once and also watch for Streamlit re-renders
+    tagAndObserve();
+    var mutObs = new MutationObserver(tagAndObserve);
+    mutObs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initScrollReveal);
+  } else {
+    initScrollReveal();
+  }
+})();
+</script>
+""", unsafe_allow_html=True)
+
 # ========== CUSTOM CSS - PROFESSIONAL DARK/LIGHT MODE ==========
+# NOTE: Streamlit sets [data-theme="dark"] on <html>, NOT prefers-color-scheme.
+# We MUST use that attribute selector for dark mode to actually work.
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Raleway:ital,wght@0,100..900;1,100..900&family=Space+Grotesk:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap');
 
-* {
+/* ---- CSS custom properties for light/dark theming ---- */
+/* Streamlit sets [data-theme="dark"] on <html> — NOT prefers-color-scheme */
+:root {
+    --fg:           #111111;
+    --fg-muted:     #6b7280;
+    --bg-card:      #ffffff;
+    --bg-card-alt:  #f8f7ff;
+    --border:       #e5e0ff;
+    --border-strong:#c4b5fd;
+    /* Brand accent — solid, minimal */
+    --accent:       #7c3aed;
+    --accent-2:     #db2777;
+    --accent-light: #ede9fe;
+    --btn-bg:       #111111;
+    --btn-hover:    #2d2d2d;
+    --tab-active-bg: #111111;
+    --shadow-sm:    0 2px 8px rgba(124,58,237,0.10);
+    --shadow-md:    0 8px 24px rgba(124,58,237,0.18);
+    --shadow-lg:    0 16px 40px rgba(124,58,237,0.22);
+    scroll-behavior: smooth;
+}
+
+[data-theme="dark"] {
+    --fg:           #f3f4f6;
+    --fg-muted:     #9ca3af;
+    --bg-card:      #1e1b2e;
+    --bg-card-alt:  #13111f;
+    --border:       #312d4e;
+    --border-strong:#4c4870;
+    --accent:       #a78bfa;
+    --accent-2:     #f472b6;
+    --accent-light: #2e1065;
+    --btn-bg:       #f3f4f6;
+    --btn-hover:    #e5e7eb;
+    --tab-active-bg: #f3f4f6;
+    --shadow-sm:    0 2px 8px rgba(0,0,0,0.4);
+    --shadow-md:    0 8px 24px rgba(0,0,0,0.5);
+    --shadow-lg:    0 16px 40px rgba(0,0,0,0.6);
+}
+
+/* Global smooth scroll */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Reduce cascade thrash — only transition specific props, not `all` */
+*, *::before, *::after {
     font-family: 'DM Sans', sans-serif;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
 }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slideInLeft {
     from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
+    to   { opacity: 1; transform: translateX(0); }
 }
-
-@keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 0, 0, 0.08); }
-    50% { box-shadow: 0 0 30px rgba(0, 0, 0, 0.12); }
-}
-
 @keyframes slideUp {
     from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ---------- CHART ENTRY ANIMATIONS ---------- */
+@keyframes chartBarRise {
+    0%   { opacity: 0; transform: scaleY(0); }
+    60%  { opacity: 1; }
+    100% { opacity: 1; transform: scaleY(1); }
+}
+@keyframes chartFadeSlideUp {
+    0%   { opacity: 0; transform: translateY(18px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes chartPieSpin {
+    0%   { opacity: 0; transform: scale(0.7) rotate(-30deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+/* Apply to entire Plotly chart SVG so it gracefully fades+rises in */
+.js-plotly-plot .main-svg {
+    animation: chartFadeSlideUp 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+/* Bar rect elements */
+.js-plotly-plot .bars .point > path,
+.js-plotly-plot .barlayer .bars path {
+    transform-origin: bottom center;
+    animation: chartBarRise 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+/* Pie / donut slices */
+.js-plotly-plot .slice path {
+    animation: chartPieSpin 0.8s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+/* Stagger bars slightly for cascading feel */
+.js-plotly-plot .bars .point:nth-child(1) path  { animation-delay: 0.05s; }
+.js-plotly-plot .bars .point:nth-child(2) path  { animation-delay: 0.12s; }
+.js-plotly-plot .bars .point:nth-child(3) path  { animation-delay: 0.19s; }
+.js-plotly-plot .bars .point:nth-child(4) path  { animation-delay: 0.26s; }
+.js-plotly-plot .bars .point:nth-child(5) path  { animation-delay: 0.33s; }
+
+/* ---------- MAIN BACKGROUND ---------- */
 .main {
-    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 50%, #f5f7fa 100%);
+    background: var(--bg-card-alt);
 }
 
-/* Tabs Styling */
+/* ---------- TABS ---------- */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 16px;
-    border-bottom: 2px solid #e5e7eb;
+    gap: 12px;
+    border-bottom: 2px solid var(--border);
     background-color: transparent;
-    padding-bottom: 12px;
+    padding-bottom: 10px;
 }
-
 .stTabs [data-baseweb="tab"] {
-    padding: 14px 24px;
+    padding: 12px 22px;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 14px;
     font-family: 'Space Grotesk', sans-serif;
-    border-radius: 12px;
-    color: #6b7280;
+    border-radius: 10px;
+    color: var(--fg-muted);
     background-color: transparent;
-    border: 2px solid transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    letter-spacing: 0.3px;
+    border: 1.5px solid transparent;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    letter-spacing: 0.2px;
 }
-
 .stTabs [data-baseweb="tab"]:hover {
-    color: #1f2937;
-    background-color: rgba(0, 0, 0, 0.03);
-    border-color: #d1d5db;
+    color: var(--fg);
+    background-color: var(--bg-card);
+    border-color: var(--border);
 }
-
 .stTabs [data-baseweb="tab"][aria-selected="true"] {
-    color: #ffffff;
-    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    color: #ffffff !important;
+    background: var(--tab-active-bg);
     border-color: transparent;
     font-weight: 700;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
+}
+[data-theme="dark"] .stTabs [data-baseweb="tab"][aria-selected="true"] {
+    color: #ffffff !important;
 }
 
-/* Button Styling */
-.stButton>button {
-    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    height: 50px;
-    font-weight: 700;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 16px;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    letter-spacing: 0.5px;
+/* ---------- BUTTONS — simple solid ---------- */
+.stButton > button {
+    background: var(--btn-bg) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    height: 50px !important;
+    font-weight: 700 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 15px !important;
+    letter-spacing: 0.4px !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.2s ease !important;
+}
+.stButton > button:hover {
+    background: var(--btn-hover) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+.stButton > button:active {
+    transform: translateY(-1px) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+[data-theme="dark"] .stButton > button {
+    color: #111111 !important;
 }
 
-.stButton>button:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.25);
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-}
-
-.stButton>button:active {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-}
-
-/* Typography */
+/* ---------- TYPOGRAPHY ---------- */
 h1, h2, h3 {
-    color: #000000;
+    color: var(--fg);
     font-family: 'Space Grotesk', sans-serif;
-    letter-spacing: -0.8px;
+    letter-spacing: -0.6px;
 }
-
 h1 {
     text-align: center;
     margin-bottom: 16px;
-    font-size: 48px;
+    font-size: 46px;
     font-weight: 800;
     animation: fadeIn 0.6s ease-out;
-    color: #000000;
 }
-
 h2 {
-    font-size: 34px;
+    font-size: 32px;
     margin-top: 28px;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     font-weight: 700;
-    animation: slideUp 0.5s ease-out;
-    color: #000000;
+    animation: slideUp 0.45s ease-out;
 }
-
 h3 {
-    font-size: 24px;
-    margin-top: 20px;
-    margin-bottom: 16px;
+    font-size: 22px;
+    margin-top: 18px;
+    margin-bottom: 14px;
     font-weight: 600;
-    color: #1f2937;
 }
-
 p {
-    color: #4b5563;
+    color: var(--fg-muted);
     line-height: 1.8;
-    font-family: 'DM Sans', sans-serif;
     font-size: 15px;
 }
 
-@media (prefers-color-scheme: dark) {
-    h1, h2, h3 {
-        color: #ffffff;
-    }
-    
-    h3 {
-        color: #e5e7eb;
-    }
-    
-    p {
-        color: #d1d5db;
-    }
-}
-
-@media (prefers-color-scheme: light) {
-    h1, h2, h3 {
-        color: #000000;
-    }
-    
-    h3 {
-        color: #1f2937;
-    }
-    
-    p {
-        color: #4b5563;
-    }
-}
-
-/* Input Styling */
+/* ---------- INPUTS ---------- */
 .stTextInput input,
 .stTextArea textarea,
-.stNumberInput input,
-.stSelectbox select {
-    border: 2px solid #d1d5db !important;
+.stNumberInput input {
+    border: 1.5px solid var(--border-strong) !important;
     border-radius: 10px !important;
-    font-size: 15px !important;
-    padding: 14px 18px !important;
+    font-size: 14px !important;
+    padding: 12px 16px !important;
     font-family: 'DM Sans', sans-serif !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    background-color: #ffffff !important;
-    color: #1f2937 !important;
+    background-color: var(--bg-card) !important;
+    color: var(--fg) !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
-
 .stTextInput input:focus,
 .stTextArea textarea:focus,
-.stNumberInput input:focus,
-.stSelectbox select:focus {
-    border-color: #000000 !important;
-    background-color: #ffffff !important;
-    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1) !important;
-    color: #1f2937 !important;
+.stNumberInput input:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.15) !important;
 }
 
-@media (prefers-color-scheme: dark) {
-    .stTextInput input,
-    .stTextArea textarea,
-    .stNumberInput input,
-    .stSelectbox select {
-        background-color: #1f2937 !important;
-        color: #ffffff !important;
-        border-color: #4b5563 !important;
-    }
-    
-    .stTextInput input:focus,
-    .stTextArea textarea:focus,
-    .stNumberInput input:focus,
-    .stSelectbox select:focus {
-        border-color: #ffffff !important;
-        background-color: #111827 !important;
-        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1) !important;
-        color: #ffffff !important;
-    }
-}
-
-/* Slider Styling */
-.stSlider label {
-    font-weight: 600;
-    color: #1f2937;
-    font-family: 'DM Sans', sans-serif;
-    margin-bottom: 12px;
-    display: block;
-}
-
-@media (prefers-color-scheme: dark) {
-    .stSlider label {
-        color: #e5e7eb;
-    }
-}
-
-/* Checkbox Styling */
-.stCheckbox {
-    padding: 12px 0;
-    transition: all 0.2s ease;
-}
-
-.stCheckbox label {
+/* ---------- LABELS / CHECKBOXES / SLIDERS / RADIO ---------- */
+.stSlider label,
+.stCheckbox label,
+.stRadio label,
+.stMultiSelect label,
+.stSelectbox label {
     font-weight: 500;
-    color: #1f2937;
+    color: var(--fg);
     font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
 }
 
-@media (prefers-color-scheme: dark) {
-    .stCheckbox label {
-        color: #e5e7eb;
-    }
-}
-
-/* Metric Cards */
+/* ---------- METRIC CARDS ---------- */
 .metric-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-    padding: 26px;
-    border-radius: 14px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e5e7eb;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: slideUp 0.5s ease-out;
-}
-
-.metric-card:hover {
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-    transform: translateY(-4px);
-    border-color: #d1d5db;
-}
-
-/* Product Cards */
-.product-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+    background: var(--bg-card);
     padding: 24px;
     border-radius: 14px;
-    margin: 14px 0;
-    border: 1.5px solid #e5e7eb;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
     animation: slideUp 0.5s ease-out;
 }
+.metric-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-4px);
+}
 
+/* ---------- PRODUCT CARDS ---------- */
+.product-card {
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: 14px;
+    margin: 12px 0;
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+    animation: slideUp 0.5s ease-out;
+}
 .product-card:hover {
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-md);
     transform: translateY(-5px);
-    border-color: #d1d5db;
-    background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+    border-color: var(--border-strong);
 }
 
-/* Premium Card Container */
+/* ---------- PREMIUM CARD ---------- */
 .premium-card {
-    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
-    padding: 28px;
+    background: var(--bg-card);
+    padding: 26px;
     border-radius: 16px;
-    border: 1.5px solid #e5e7eb;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    margin: 16px 0;
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    margin: 14px 0;
 }
-
 .premium-card:hover {
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-    border-color: #d1d5db;
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
     transform: translateY(-2px);
 }
-    transform: translateY(-5px);
-    border-color: #d1d5db;
-    background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
-}
 
-/* Tags - Premium Styling */
+/* ---------- INGREDIENT TAGS ---------- */
 .ingredient-tag {
     display: inline-block;
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-    color: #1f2937;
-    padding: 12px 18px;
+    background: var(--bg-card);
+    color: var(--fg);
+    padding: 10px 16px;
     border-radius: 24px;
-    margin: 6px 6px 6px 0;
+    margin: 5px 5px 5px 0;
     font-size: 13px;
     font-weight: 600;
-    border: 1.5px solid #d1d5db;
-    transition: all 0.3s ease;
+    border: 1.5px solid var(--border-strong);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: default;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
 }
-
 .ingredient-tag:hover {
-    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
-    border-color: #9ca3af;
+    border-color: var(--fg-muted);
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-md);
 }
-
 .ingredient-tag.safe {
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    background: #d1fae5;
     color: #065f46;
     border-color: #6ee7b7;
 }
-
-.ingredient-tag.safe:hover {
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.2);
-    transform: translateY(-3px);
+[data-theme="dark"] .ingredient-tag.safe {
+    background: #064e3b;
+    color: #a7f3d0;
+    border-color: #065f46;
 }
-
 .ingredient-tag.active {
-    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+    background: #ede9fe;
     color: #4c1d95;
-    border-color: #a78bfa;
+    border-color: #c4b5fd;
 }
-
-.ingredient-tag.active:hover {
-    box-shadow: 0 6px 16px rgba(168, 85, 247, 0.2);
-    transform: translateY(-3px);
+[data-theme="dark"] .ingredient-tag.active {
+    background: #2e1065;
+    color: #ddd6fe;
+    border-color: #6d28d9;
 }
-
 .ingredient-tag.warning {
-    background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+    background: #fef9c3;
     color: #78350f;
-    border-color: #facc15;
+    border-color: #fde68a;
+}
+[data-theme="dark"] .ingredient-tag.warning {
+    background: #451a03;
+    color: #fde68a;
+    border-color: #92400e;
 }
 
-.ingredient-tag.warning:hover {
-    box-shadow: 0 6px 16px rgba(202, 138, 4, 0.2);
-    transform: translateY(-3px);
-}
-
-/* Badges - No Emojis */
+/* ---------- BADGES ---------- */
 .success-badge {
-    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    background: #ecfdf5;
     color: #065f46;
-    padding: 20px 24px;
+    padding: 18px 22px;
     border-radius: 12px;
-    margin: 16px 0;
+    margin: 14px 0;
     font-weight: 600;
     border: 1.5px solid #6ee7b7;
     animation: slideInLeft 0.5s ease-out;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+    box-shadow: 0 4px 12px rgba(16,185,129,0.1);
 }
-
 .info-badge {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-    color: #0c2d6b;
-    padding: 20px 24px;
+    background: #eff6ff;
+    color: #1e40af;
+    padding: 18px 22px;
     border-radius: 12px;
-    margin: 16px 0;
+    margin: 14px 0;
     font-weight: 600;
-    border: 1.5px solid #60a5fa;
+    border: 1.5px solid #93c5fd;
     animation: slideInLeft 0.5s ease-out 0.1s both;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.1);
 }
-
 .warning-badge {
-    background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%);
+    background: #fefce8;
     color: #78350f;
-    padding: 20px 24px;
+    padding: 18px 22px;
     border-radius: 12px;
-    margin: 16px 0;
+    margin: 14px 0;
     font-weight: 600;
-    border: 1.5px solid #facc15;
+    border: 1.5px solid #fde68a;
     animation: slideInLeft 0.5s ease-out 0.2s both;
-    box-shadow: 0 4px 12px rgba(202, 138, 4, 0.12);
+    box-shadow: 0 4px 12px rgba(202,138,4,0.1);
 }
-
 .error-badge {
-    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    background: #fef2f2;
     color: #7f1d1d;
-    padding: 20px 24px;
+    padding: 18px 22px;
     border-radius: 12px;
-    margin: 16px 0;
+    margin: 14px 0;
     font-weight: 600;
     border: 1.5px solid #fca5a5;
     animation: slideInLeft 0.5s ease-out 0.3s both;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.12);
+    box-shadow: 0 4px 12px rgba(239,68,68,0.1);
 }
+[data-theme="dark"] .success-badge { background: #064e3b; color: #a7f3d0; border-color: #065f46; }
+[data-theme="dark"] .info-badge    { background: #1e3a8a; color: #bfdbfe; border-color: #1e40af; }
+[data-theme="dark"] .warning-badge { background: #451a03; color: #fde68a; border-color: #92400e; }
+[data-theme="dark"] .error-badge   { background: #450a0a; color: #fca5a5; border-color: #7f1d1d; }
 
-/* Divider */
+/* ---------- DIVIDER ---------- */
 .divider {
-    margin: 32px 0;
-    border-top: 2px solid #e5e7eb;
-    opacity: 0.8;
+    margin: 28px 0;
+    border-top: 1.5px solid var(--border);
+    opacity: 0.9;
 }
 
-/* Sidebar Header */
+/* ---------- SIDEBAR ---------- */
 .sidebar-header {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
-    color: #000000;
+    color: var(--fg);
     font-family: 'Space Grotesk', sans-serif;
-    margin-bottom: 16px;
-    padding-bottom: 14px;
-    border-bottom: 2.5px solid #000000;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--fg);
     letter-spacing: -0.3px;
 }
+[data-theme="dark"] .sidebar-glowguide { border-bottom-color: var(--border); }
 
-/* Radio Button */
-.stRadio label {
-    font-weight: 500;
-    color: #1f2937;
-    font-family: 'DM Sans', sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-    .stRadio label {
-        color: #e5e7eb;
-    }
-}
-
-/* Multiselect */
-.stMultiSelect label {
-    font-weight: 600;
-    color: #1f2937;
-    font-family: 'DM Sans', sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-    .stMultiSelect label {
-        color: #e5e7eb;
-    }
-}
-
-/* Table */
+/* ---------- TABLE / DATAFRAME ---------- */
 .stDataFrame {
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e5e7eb;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
 }
 
-/* Expander */
+/* ---------- EXPANDER ---------- */
 .streamlit-expanderHeader {
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 10px;
     font-weight: 600;
-    transition: all 0.3s ease;
+    color: var(--fg);
+    transition: background 0.2s ease;
+}
+.streamlit-expanderHeader:hover {
+    background-color: var(--bg-card-alt);
+    border-color: var(--border-strong);
 }
 
-.streamlit-expanderHeader:hover {
-    background-color: #f3f4f6;
-    border-color: #d1d5db;
+/* ---------- PLOTLY CHART CONTAINERS ---------- */
+.js-plotly-plot .plotly {
+    border-radius: 12px;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # ========== TITLE & SUBTITLE ==========
-st.markdown("""
+st.markdown(f"""
 <style>
-    .glowguide-header {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        margin-bottom: 16px;
-        animation: fadeIn 0.6s ease-out;
-        padding: 16px 0;
-    }
-    
-    .glowguide-logo {
-        width: 60px;
-        height: 60px;
-        object-fit: contain;
-    }
-    
-    .glowguide-title {
-        font-size: 48px;
-        font-weight: 800;
-        margin: 0;
-        font-family: 'Space Grotesk', sans-serif;
-        letter-spacing: -0.8px;
-        color: var(--text-color, #000000);
-    }
-    
-    @media (prefers-color-scheme: dark) {
-        .glowguide-title {
-            color: #ffffff;
-        }
-    }
-    
-    @media (prefers-color-scheme: light) {
-        .glowguide-title {
-            color: #000000;
-        }
-    }
+.glowguide-header {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 8px;
+    animation: fadeIn 0.65s ease-out;
+    padding: 24px 0 8px;
+}}
+.glowguide-logo {{
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    background: transparent;
+}}
+.glowguide-title {{
+    font-size: 52px;
+    font-weight: 900;
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -1.2px;
+    color: var(--fg, #111111);
+    line-height: 1;
+}}
+.glowguide-subtitle {{
+    text-align: center;
+    font-size: 15px;
+    margin: 0 auto 32px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    color: var(--fg-muted, #6b7280);
+    max-width: 480px;
+}}
+.glowguide-badge {{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 28px;
+    gap: 6px;
+}}
+.glowguide-badge span {{
+    display: inline-block;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 16px;
+    border-radius: 999px;
+    border: 1.5px solid var(--accent, #7c3aed);
+    color: var(--accent, #7c3aed);
+    letter-spacing: 0.6px;
+    font-family: 'Space Grotesk', sans-serif;
+    transition: background 0.2s ease;
+}}
+.glowguide-badge span:hover {{
+    background: var(--accent-light, #ede9fe);
+}}
 </style>
 
 <div class="glowguide-header">
-    <img src="file://""" + str(logo_path) + """" class="glowguide-logo" alt="GlowGuide Logo">
+    <img src="{LOGO_DATA_URI}" class="glowguide-logo" alt="GlowGuide Logo">
     <h1 class="glowguide-title">GlowGuide</h1>
 </div>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<style>
-    .glowguide-subtitle {
-        text-align: center;
-        font-size: 16px;
-        margin-bottom: 32px;
-        font-weight: 500;
-        letter-spacing: 0.3px;
-        color: var(--subtitle-color, #6b7280);
-    }
-    
-    @media (prefers-color-scheme: dark) {
-        .glowguide-subtitle {
-            color: #d1d5db;
-        }
-    }
-    
-    @media (prefers-color-scheme: light) {
-        .glowguide-subtitle {
-            color: #6b7280;
-        }
-    }
-</style>
-
 <p class="glowguide-subtitle">Find the perfect skincare products based on your unique skin profile</p>
+<div class="glowguide-badge">
+    <span>AI-Powered</span>
+    <span>Skincare Intelligence</span>
+    <span>Personalized</span>
+</div>
 """, unsafe_allow_html=True)
 
 # ========== SIDEBAR - USER PROFILE ==========
 with st.sidebar:
-    # Unified GlowGuide Header
-    st.markdown("""
+    # Unified GlowGuide Header using base64 logo
+    st.markdown(f"""
     <style>
-        .sidebar-glowguide {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding-bottom: 24px;
-            margin-bottom: 24px;
-            border-bottom: 2px solid #e5e7eb;
-        }
-        
-        .sidebar-glowguide-logo {
-            width: 45px;
-            height: 45px;
-            object-fit: contain;
-        }
-        
-        .sidebar-glowguide-title {
-            font-size: 24px;
-            font-weight: 800;
-            margin: 0;
-            font-family: 'Space Grotesk', sans-serif;
-            color: var(--sidebar-text, #000000);
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            .sidebar-glowguide {
-                border-bottom-color: #374151;
-            }
-            .sidebar-glowguide-title {
-                color: #ffffff;
-            }
-        }
-        
-        @media (prefers-color-scheme: light) {
-            .sidebar-glowguide {
-                border-bottom-color: #e5e7eb;
-            }
-            .sidebar-glowguide-title {
-                color: #000000;
-            }
-        }
+    .sidebar-glowguide {{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 11px;
+        padding: 8px 0 20px;
+        margin-bottom: 20px;
+        border-bottom: 1.5px solid var(--border, #e5e7eb);
+    }}
+    .sidebar-glowguide-logo {{
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        background: transparent;
+    }}
+    .sidebar-glowguide-title {{
+        font-size: 22px;
+        font-weight: 800;
+        margin: 0;
+        font-family: 'Space Grotesk', sans-serif;
+        color: var(--fg, #111111);
+        letter-spacing: -0.5px;
+    }}
+    .sidebar-section-label {{
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--fg-muted, #6b7280);
+        margin: 20px 0 10px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border, #e5e7eb);
+    }}
     </style>
-    
     <div class="sidebar-glowguide">
-        <img src="file://""" + str(logo_path) + """" class="sidebar-glowguide-logo" alt="GlowGuide">
+        <img src="{LOGO_DATA_URI}" class="sidebar-glowguide-logo" alt="GlowGuide">
         <h2 class="sidebar-glowguide-title">GlowGuide</h2>
     </div>
+    <p style="text-align:center; font-size:11px; color:var(--fg-muted,#9ca3af); margin:-8px 0 4px; font-weight:600; letter-spacing:0.5px;">SKINCARE INTELLIGENCE</p>
     """, unsafe_allow_html=True)
-    
-    st.markdown(
-        "<p style='text-align: center; font-size: 12px; color: #9ca3af; margin-bottom: 24px; font-weight: 500;'>Skincare Intelligence</p>",
-        unsafe_allow_html=True
-    )
     
     st.divider()
     
-    st.markdown("<h3 style='font-size: 16px; font-weight: 700; margin: 16px 0 12px 0; color: #1f2937;'>Your Profile</h3>", unsafe_allow_html=True)
+    st.markdown("<p class='sidebar-section-label'>Your Profile</p>", unsafe_allow_html=True)
     
     # ML Backend compatible skin type selector
     skin_type = st.selectbox(
@@ -795,7 +801,7 @@ with st.sidebar:
     
     st.divider()
     
-    st.markdown("<h3 style='font-size: 16px; font-weight: 700; margin: 16px 0 12px 0; color: #1f2937;'>Preferences</h3>", unsafe_allow_html=True)
+    st.markdown("<p class='sidebar-section-label'>Preferences</p>", unsafe_allow_html=True)
     
     alcohol_free = st.checkbox("Alcohol-Free Only", value=False, key="sidebar_alcohol_main")
     fragrance_free = st.checkbox("Fragrance-Free Only", value=False, key="sidebar_fragrance_main")
@@ -906,66 +912,38 @@ with tab1:
                 st.markdown("### Top Products with This Ingredient")
                 
                 # Create clickable product cards in a grid
-                cols = st.columns(len(products[:3]))
+                # Google icon SVG (official colours)
+                GOOGLE_ICON = '''
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 48 48">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>'''
+
+                cols = st.columns(min(len(products[:3]), 3))
                 for idx, product in enumerate(products[:3]):
                     with cols[idx]:
                         product_name = product.get('product_name', 'Unknown Product')
-                        price = product.get('price', 0)
-                        image_url = product.get('image_url', 'https://via.placeholder.com/150?text=Product')
-                        
-                        # Get search link (hybrid system: curated or dynamic)
-                        search_link = get_product_link(product_name)
-                        
-                        # Display product card with image
+                        price        = product.get('price', 0)
+                        search_link  = get_product_link(product_name)
+
                         st.markdown(f"""
-                        <a href="{search_link}" target="_blank" style="text-decoration: none; cursor: pointer;">
-                            <div style="
-                                border: 1px solid #e5e7eb;
-                                padding: 16px;
-                                border-radius: 12px;
-                                margin-bottom: 12px;
-                                background: #ffffff;
-                                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-                                transition: all 0.2s ease-in-out;
-                                text-align: center;
-                            ">
-                                <img src="{image_url}" style="
-                                    width: 120px;
-                                    height: 120px;
-                                    object-fit: contain;
-                                    margin-bottom: 10px;
-                                    border-radius: 8px;
-                                " alt="{product_name}"/>
-                                
-                                <h4 style="
-                                    margin: 0;
-                                    color: #111827;
-                                    font-size: 16px;
-                                    font-weight: 600;
-                                    margin-bottom: 6px;
-                                    line-height: 1.4;
-                                ">
-                                    {product_name}
-                                </h4>
-                                
-                                <p style="
-                                    margin: 0;
-                                    color: #6b7280;
-                                    font-size: 14px;
-                                    margin-bottom: 8px;
-                                ">
-                                    ₹{price:.0f}
-                                </p>
-                                
-                                <p style="
-                                    margin: 0;
-                                    font-size: 13px;
-                                    color: #2563eb;
-                                    font-weight: 600;
-                                ">
-                                    View product
-                                </p>
-                            </div>
+                        <a href="{search_link}" target="_blank" style="text-decoration:none;">
+                          <div style="
+                            border: 1.5px solid var(--border, #e5e0ff);
+                            border-radius: 14px;
+                            padding: 20px 16px;
+                            background: var(--bg-card, #fff);
+                            box-shadow: 0 2px 10px rgba(124,58,237,0.07);
+                            text-align: center;
+                            transition: box-shadow 0.2s ease, transform 0.2s ease;
+                          ">
+                            <div style="margin-bottom:12px;">{GOOGLE_ICON}</div>
+                            <p style="margin:0 0 6px;font-weight:700;font-size:14px;color:var(--fg,#111);line-height:1.4;">{product_name}</p>
+                            <p style="margin:0 0 10px;font-size:13px;color:var(--fg-muted,#6b7280);">&#8377;{price:.0f}</p>
+                            <span style="font-size:12px;font-weight:600;color:#4285F4;">Search on Google &rarr;</span>
+                          </div>
                         </a>
                         """, unsafe_allow_html=True)
             else:
@@ -1072,21 +1050,36 @@ with tab2:
         
         st.markdown("### Ingredient Safety Score")
         fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number",
+            mode="gauge+number+delta",
             value=82,
+            delta={'reference': 60, 'increasing': {'color': '#10b981'}},
             domain={'x': [0, 1], 'y': [0, 1]},
-            title={'text': "Safety Score"},
+            title={'text': "Safety Score", 'font': {'size': 18}},
             gauge={
-                'axis': {'range': [0, 100]},
-                'bar': {'color': "#000000"},
+                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': '#9ca3af'},
+                'bar': {'color': '#6366f1', 'thickness': 0.25},
+                'bgcolor': 'rgba(0,0,0,0)',
+                'borderwidth': 0,
                 'steps': [
-                    {'range': [0, 50], 'color': "#f5f5f5"},
-                    {'range': [50, 100], 'color': "#e0e0e0"}
-                ]
+                    {'range': [0, 40],  'color': 'rgba(239,68,68,0.15)'},
+                    {'range': [40, 70], 'color': 'rgba(251,191,36,0.15)'},
+                    {'range': [70, 100],'color': 'rgba(16,185,129,0.15)'}
+                ],
+                'threshold': {
+                    'line': {'color': '#6366f1', 'width': 3},
+                    'thickness': 0.75,
+                    'value': 82
+                }
             }
         ))
-        fig_gauge.update_layout(height=300)
-        st.plotly_chart(fig_gauge, use_container_width=True)
+        fig_gauge.update_layout(
+            height=300,
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#6b7280'),
+            transition={'duration': 700, 'easing': 'cubic-in-out'}
+        )
+        st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
         
         st.markdown("<div class='success-badge'>Safe for your skin profile</div>", unsafe_allow_html=True)
 
@@ -1208,18 +1201,29 @@ with tab3:
                         title='Time Commitment per Step',
                         labels={'Time': 'Minutes', 'Step': 'Routine Step'},
                         color='Time',
-                        color_continuous_scale='Blues',
+                        color_continuous_scale=[[0,'#f9a8d4'],[0.5,'#a78bfa'],[1,'#7c3aed']],
                         text='Time'
                     )
                     fig_timeline.update_traces(textposition='auto')
+                    fig_timeline.update_traces(
+                        marker_line_width=0,
+                        textfont=dict(size=12, color='white')
+                    )
                     fig_timeline.update_layout(
-                        height=300,
+                        height=320,
                         showlegend=False,
                         xaxis_title='Minutes',
                         yaxis_title='',
-                        hovermode='y unified'
+                        hovermode='y unified',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color='#6b7280'),
+                        xaxis=dict(showgrid=True, gridcolor='rgba(156,163,175,0.15)', zeroline=False),
+                        yaxis=dict(showgrid=False),
+                        transition={'duration': 600, 'easing': 'cubic-in-out'},
+                        margin=dict(l=10, r=10, t=40, b=10)
                     )
-                    st.plotly_chart(fig_timeline, use_container_width=True)
+                    st.plotly_chart(fig_timeline, use_container_width=True, config={'displayModeBar': False})
                     
                     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
                     
@@ -1286,17 +1290,25 @@ with tab3:
                             title='Skin Concern Coverage by This Routine',
                             labels={'Coverage': 'Number of Steps Addressing'},
                             color='Coverage',
-                            color_continuous_scale='Greens',
+                            color_continuous_scale=[[0,'#fce7f3'],[0.5,'#c084fc'],[1,'#7c3aed']],
                             text='Coverage'
                         )
                         fig_concerns.update_traces(textposition='auto')
+                        fig_concerns.update_traces(marker_line_width=0)
                         fig_concerns.update_layout(
-                            height=350,
+                            height=360,
                             showlegend=False,
-                            xaxis_tickangle=-45,
-                            hovermode='x unified'
+                            xaxis_tickangle=-30,
+                            hovermode='x unified',
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            font=dict(color='#6b7280'),
+                            xaxis=dict(showgrid=False, zeroline=False),
+                            yaxis=dict(showgrid=True, gridcolor='rgba(156,163,175,0.15)', zeroline=False),
+                            transition={'duration': 600, 'easing': 'cubic-in-out'},
+                            margin=dict(l=10, r=10, t=40, b=10)
                         )
-                        st.plotly_chart(fig_concerns, use_container_width=True)
+                        st.plotly_chart(fig_concerns, use_container_width=True, config={'displayModeBar': False})
                     
                     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
                     
@@ -1312,10 +1324,25 @@ with tab3:
                         names='Product Type',
                         values='Count',
                         title='Product Types in Your Routine',
-                        color_discrete_sequence=['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981']
+                        color_discrete_sequence=['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899'],
+                        hole=0.4  # donut style
                     )
-                    fig_composition.update_layout(height=350)
-                    st.plotly_chart(fig_composition, use_container_width=True)
+                    fig_composition.update_traces(
+                        textposition='inside',
+                        textinfo='percent+label',
+                        marker=dict(line=dict(color='rgba(0,0,0,0)', width=0))
+                    )
+                    fig_composition.update_layout(
+                        height=360,
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color='#6b7280'),
+                        transition={'duration': 600, 'easing': 'cubic-in-out'},
+                        margin=dict(l=10, r=10, t=40, b=10),
+                        showlegend=True,
+                        legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5)
+                    )
+                    st.plotly_chart(fig_composition, use_container_width=True, config={'displayModeBar': False})
                     
                     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
                     
@@ -1376,17 +1403,27 @@ with tab3:
                             orientation='h',
                             title='Model Performance Metrics',
                             color='Score',
-                            color_continuous_scale='Viridis',
+                            color_continuous_scale=[[0,'#fce7f3'],[0.4,'#c084fc'],[1,'#7c3aed']],
                             text='Score'
                         )
-                        fig_confidence.update_traces(textposition='auto')
+                        fig_confidence.update_traces(
+                            textposition='auto',
+                            marker_line_width=0
+                        )
                         fig_confidence.update_layout(
                             height=300,
                             showlegend=False,
                             xaxis_title='Confidence Score (%)',
-                            yaxis_title=''
+                            yaxis_title='',
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            font=dict(color='#6b7280'),
+                            xaxis=dict(showgrid=True, gridcolor='rgba(156,163,175,0.15)', zeroline=False),
+                            yaxis=dict(showgrid=False),
+                            transition={'duration': 600, 'easing': 'cubic-in-out'},
+                            margin=dict(l=10, r=10, t=40, b=10)
                         )
-                        st.plotly_chart(fig_confidence, use_container_width=True)
+                        st.plotly_chart(fig_confidence, use_container_width=True, config={'displayModeBar': False})
                     
                     with col_viz2:
                         st.markdown("#### Input Profile Summary")

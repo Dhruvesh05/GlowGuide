@@ -39,7 +39,7 @@ def display_eda_dashboard():
     
     st.markdown("## Data Science Insights")
     st.markdown(
-        "<p style='font-size: 14px; color: #6b7280; margin-bottom: 20px;'>"
+        "<p style='font-size: 14px; color: var(--fg-muted, #6b7280); margin-bottom: 20px;'>"
         "Explore the skincare dataset: Ingredient recommendations, skin type distribution, "
         "and concern patterns from 50 analyzed skincare profiles."
         "</p>",
@@ -98,19 +98,26 @@ def display_eda_dashboard():
             y='Count',
             title="Distribution of Skin Types",
             color='Count',
-            color_continuous_scale='Blues',
+            color_continuous_scale=[[0,'#f9a8d4'],[0.5,'#a78bfa'],[1,'#7c3aed']],
             labels={'Count': 'Number of Profiles'},
             text='Count'
         )
-        fig1.update_traces(textposition='auto')
+        fig1.update_traces(textposition='auto', marker_line_width=0)
         fig1.update_layout(
             height=350,
             showlegend=False,
             xaxis_title="Skin Type",
             yaxis_title="Count",
-            hovermode='x unified'
+            hovermode='x unified',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#6b7280'),
+            xaxis=dict(showgrid=False, zeroline=False),
+            yaxis=dict(showgrid=True, gridcolor='rgba(156,163,175,0.12)', zeroline=False),
+            transition={'duration': 600, 'easing': 'cubic-in-out'},
+            margin=dict(l=8, r=8, t=36, b=8)
         )
-        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False})
         
         # Stats
         with st.expander("View Stats", expanded=False):
@@ -128,19 +135,26 @@ def display_eda_dashboard():
             y='Count',
             title="Count of Each Ingredient",
             color='Count',
-            color_continuous_scale='Greens',
+            color_continuous_scale=[[0,'#fce7f3'],[0.5,'#db2777'],[1,'#7c3aed']],
             labels={'Count': 'Frequency'},
             text='Count'
         )
-        fig2.update_traces(textposition='auto')
+        fig2.update_traces(textposition='auto', marker_line_width=0)
         fig2.update_layout(
             height=350,
             showlegend=False,
             xaxis_title="Ingredient",
             yaxis_title="Count",
-            hovermode='x unified'
+            hovermode='x unified',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#6b7280'),
+            xaxis=dict(showgrid=False, zeroline=False, tickangle=-20),
+            yaxis=dict(showgrid=True, gridcolor='rgba(156,163,175,0.12)', zeroline=False),
+            transition={'duration': 600, 'easing': 'cubic-in-out'},
+            margin=dict(l=8, r=8, t=36, b=8)
         )
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
         
         # Stats
         with st.expander("View Stats", expanded=False):
@@ -166,19 +180,26 @@ def display_eda_dashboard():
             y='Count',
             title="Skin Concern Frequency",
             color='Count',
-            color_continuous_scale='Reds',
+            color_continuous_scale=[[0,'#fbcfe8'],[0.5,'#c084fc'],[1,'#6d28d9']],
             labels={'Count': 'Number of Profiles'},
             text='Count'
         )
-        fig3.update_traces(textposition='auto')
+        fig3.update_traces(textposition='auto', marker_line_width=0)
         fig3.update_layout(
             height=350,
             showlegend=False,
             xaxis_title="Concern Type",
             yaxis_title="Count",
-            hovermode='x unified'
+            hovermode='x unified',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#6b7280'),
+            xaxis=dict(showgrid=False, zeroline=False),
+            yaxis=dict(showgrid=True, gridcolor='rgba(156,163,175,0.12)', zeroline=False),
+            transition={'duration': 600, 'easing': 'cubic-in-out'},
+            margin=dict(l=8, r=8, t=36, b=8)
         )
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar': False})
         
         # Stats
         with st.expander("View Stats", expanded=False):
@@ -208,8 +229,15 @@ def display_eda_dashboard():
             color_continuous_scale="YlOrRd",
             text_auto=True
         )
-        fig_heat.update_layout(height=350)
-        st.plotly_chart(fig_heat, use_container_width=True)
+        fig_heat.update_layout(
+            height=350,
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#6b7280'),
+            transition={'duration': 600, 'easing': 'cubic-in-out'},
+            margin=dict(l=8, r=8, t=40, b=8)
+        )
+        st.plotly_chart(fig_heat, use_container_width=True, config={'displayModeBar': False})
     
     # Right: Concern Distribution Pie Chart
     with analysis_cols[1]:
@@ -233,10 +261,25 @@ def display_eda_dashboard():
             names='Concern',
             values='Percentage',
             title="Profile Distribution by Concern",
-            color_discrete_sequence=['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A']
+            color_discrete_sequence=['#7c3aed', '#db2777', '#0ea5e9', '#10b981'],
+            hole=0.4
         )
-        fig_pie.update_layout(height=350)
-        st.plotly_chart(fig_pie, use_container_width=True)
+        fig_pie.update_traces(
+            textposition='inside',
+            textinfo='percent+label',
+            marker=dict(line=dict(color='rgba(0,0,0,0)', width=0))
+        )
+        fig_pie.update_layout(
+            height=350,
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#6b7280'),
+            transition={'duration': 600, 'easing': 'cubic-in-out'},
+            margin=dict(l=8, r=8, t=40, b=8),
+            showlegend=True,
+            legend=dict(orientation='h', yanchor='bottom', y=-0.25, xanchor='center', x=0.5)
+        )
+        st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': False})
     
     st.divider()
     
@@ -277,14 +320,25 @@ def display_eda_dashboard():
             title="Concern Frequency by Skin Type",
             labels={'Frequency': 'Avg Frequency'},
             color_discrete_map={
-                'Avg Acne': '#FF6B6B',
-                'Avg Dryness': '#4ECDC4',
-                'Avg Sensitivity': '#45B7D1',
-                'Avg Aging': '#FFA07A'
+                'Avg Acne':        '#db2777',
+                'Avg Dryness':     '#0ea5e9',
+                'Avg Sensitivity': '#7c3aed',
+                'Avg Aging':       '#f59e0b'
             }
         )
-        fig_pattern.update_layout(height=350, hovermode='x unified')
-        st.plotly_chart(fig_pattern, use_container_width=True)
+        fig_pattern.update_traces(marker_line_width=0)
+        fig_pattern.update_layout(
+            height=350,
+            hovermode='x unified',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#6b7280'),
+            xaxis=dict(showgrid=False, zeroline=False),
+            yaxis=dict(showgrid=True, gridcolor='rgba(156,163,175,0.12)', zeroline=False),
+            transition={'duration': 600, 'easing': 'cubic-in-out'},
+            margin=dict(l=8, r=8, t=40, b=8)
+        )
+        st.plotly_chart(fig_pattern, use_container_width=True, config={'displayModeBar': False})
     
     with pattern_cols[1]:
         st.markdown("#### Top Recommendations by Concern")
