@@ -201,7 +201,7 @@ def display_comparison_table(recommendations: List[RecommendationResult]):
     if not recommendations:
         return
     
-    st.markdown("### 📊 Detailed Comparison")
+    st.markdown("### Detailed Comparison")
     
     comparison_data = []
     for idx, rec in enumerate(recommendations[:5], 1):
@@ -238,7 +238,7 @@ def display_explainability_breakdown(recommendation: RecommendationResult):
         recommendation: RecommendationResult object
     """
     
-    st.markdown(f"### 🔍 Detailed Score Breakdown: {recommendation.ingredient}")
+    st.markdown(f"### Detailed Score Breakdown: {recommendation.ingredient}")
     
     col1, col2 = st.columns([1, 2])
     
@@ -387,4 +387,4 @@ def display_ingredient_explanation(
     
     if ingredient in ingredient_benefits:
         for benefit in ingredient_benefits[ingredient]:
-            st.write(f"✓ {benefit}")
+            st.write(f"{benefit}")

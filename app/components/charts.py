@@ -1,4 +1,4 @@
-"""Data visualization components for market intelligence."""
+"""Data visualization components for market intelligence - Premium Styling."""
 
 import sys
 from pathlib import Path
@@ -6,13 +6,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 from utils.engine import get_top_ingredients, get_full_tfidf_matrix, get_pca_coords
 from utils.styles import SECTION_HEADER
 
 
 def render_price_distribution(df: pd.DataFrame, selected_labels: list, price_range: tuple) -> None:
-    """Box plot of price distribution by product category."""
+    """Box plot of price distribution by product category - Premium Styling."""
     filtered = df[
         (df["Label"].isin(selected_labels)) &
         (df["Price"] >= price_range[0]) &
@@ -26,22 +27,27 @@ def render_price_distribution(df: pd.DataFrame, selected_labels: list, price_ran
     fig = px.box(
         filtered, x="Label", y="Price", color="Label",
         title="Price Distribution by Category",
-        color_discrete_sequence=["#6366F1", "#8B5CF6", "#A78BFA", "#C4B5FD", "#DDD6FE"]
+        color_discrete_sequence=["#1f2937", "#374151", "#4b5563", "#6b7280", "#9ca3af"]
     )
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="DM Sans", color="#0F172A"),
+        font=dict(family="DM Sans", color="#1f2937", size=13),
         showlegend=False,
-        xaxis_title="",
+        xaxis_title="Product Category",
         yaxis_title="Price (USD)",
-        hovermode="x unified"
+        hovermode="x unified",
+        title_font_size=18,
+        title_font_color="#000000",
+        height=400,
+        margin=dict(l=60, r=40, t=60, b=50)
     )
+    fig.update_traces(marker=dict(line=dict(color="#ffffff", width=1)))
     st.plotly_chart(fig, use_container_width=True)
 
 
 def render_ingredient_frequency(df: pd.DataFrame) -> None:
-    """Horizontal bar chart of top 20 ingredients."""
+    """Horizontal bar chart of top 20 ingredients - Premium Styling."""
     names, counts = get_top_ingredients(df, 20)
     
     if not names:
@@ -50,24 +56,31 @@ def render_ingredient_frequency(df: pd.DataFrame) -> None:
     
     fig = px.bar(
         x=counts, y=names, orientation="h",
-        title="Top 20 Ingredients",
+        title="Top 20 Most Frequent Ingredients",
         color=counts,
-        color_continuous_scale=["#EEF2FF", "#6366F1"],
+        color_continuous_scale=["#e5e7eb", "#1f2937"],
         labels={"x": "Frequency", "y": ""}
     )
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="DM Sans", color="#0F172A"),
+        font=dict(family="DM Sans", color="#1f2937", size=13),
         yaxis=dict(autorange="reversed"),
         coloraxis_showscale=False,
-        hovermode="y"
+        hovermode="y",
+        xaxis_title="Frequency Count",
+        yaxis_title="Ingredient",
+        title_font_size=18,
+        title_font_color="#000000",
+        height=400,
+        margin=dict(l=150, r=40, t=60, b=50)
     )
+    fig.update_traces(textposition='auto')
     st.plotly_chart(fig, use_container_width=True)
 
 
 def render_cluster_map(df: pd.DataFrame, vectorizer) -> None:
-    """PCA 2D scatter of product clusters."""
+    """PCA 2D scatter of product clusters - Premium Styling."""
     try:
         full_matrix = get_full_tfidf_matrix(df, vectorizer)
         x_coords, y_coords = get_pca_coords(full_matrix)
@@ -87,14 +100,21 @@ def render_cluster_map(df: pd.DataFrame, vectorizer) -> None:
             color="Cluster",
             hover_data=["Name", "Brand", "Price", "Label"],
             title="Product Clusters (PCA View)",
-            color_discrete_sequence=px.colors.qualitative.Safe,
-            labels={"pca_x": "Component 1", "pca_y": "Component 2"}
+            color_discrete_sequence=["#1f2937", "#374151", "#4b5563", "#6b7280", "#9ca3af"],
+            labels={"pca_x": "Principal Component 1", "pca_y": "Principal Component 2"}
         )
         fig.update_layout(
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="DM Sans", color="#0F172A"),
-            hovermode="closest"
+            font=dict(family="DM Sans", color="#1f2937", size=13),
+            hovermode="closest",
+            title_font_size=18,
+            title_font_color="#000000",
+            height=450,
+            margin=dict(l=80, r=40, t=60, b=80)
+        )
+        fig.update_traces(
+            marker=dict(size=8, line=dict(color="#ffffff", width=1), opacity=0.8)
         )
         st.plotly_chart(fig, use_container_width=True)
     except Exception as e:

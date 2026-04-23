@@ -42,7 +42,7 @@ def render_recommendations(inputs: dict, df, vectorizer) -> None:
             with c2:
                 st.metric("Price", format_price(row["Price"]))
             with c3:
-                st.metric("Rating", f"⭐ {row['Rank']:.1f}")
+                st.metric("Rating", f"{row['Rank']:.1f}")
             st.markdown(CARD_CLOSE, unsafe_allow_html=True)
     else:
         product = matching.iloc[0]

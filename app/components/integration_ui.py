@@ -33,7 +33,7 @@ def display_combined_recommendations(
     """
     
     # Header
-    st.markdown("### 🎯 Smart Recommendation Engine")
+    st.markdown("### Smart Recommendation Engine")
     st.markdown(
         "Powered by both **Rule-Based Scoring** and **Machine Learning** "
         "for the most accurate skincare recommendations."
@@ -49,7 +49,7 @@ def display_combined_recommendations(
     
     # COLUMN 1: RULE-BASED TOP RECOMMENDATIONS
     with col1:
-        st.markdown("#### 📋 Top Recommendations (Score-Based)")
+        st.markdown("#### Top Recommendations (Score-Based)")
         st.markdown(
             "<p style='font-size: 13px; color: #666; margin-bottom: 12px;'>"
             "Rule-based engine analyzing your skin type and concerns"
@@ -81,7 +81,7 @@ def display_combined_recommendations(
     # ====================================================================
     
     if show_comparison:
-        st.markdown("### 📊 Approach Comparison")
+        st.markdown("### Approach Comparison")
         
         col1, col2, col3, col4 = st.columns(4)
         
@@ -107,7 +107,7 @@ def display_combined_recommendations(
             )
         
         # Metric 3: Agreement
-        agreement = "✅ YES" if top_score_rec == top_ml_rec else "⚠️ DIFFERS"
+        agreement = "Yes" if top_score_rec == top_ml_rec else "Differs"
         with col3:
             st.metric(
                 "Approaches Agree",
@@ -322,29 +322,29 @@ def _display_insights(recommendations: List, ml_result: Dict, user_profile: Dict
     # Insight 1: Agreement
     if top_score == top_ml:
         insights.append(
-            f"✅ **Strong Agreement**: Both approaches recommend {top_score} for your {skin_type} skin. "
+            f"Strong Agreement: Both approaches recommend {top_score} for your {skin_type} skin. "
             f"This is a highly confident recommendation."
         )
     else:
         insights.append(
-            f"⚠️ **Different Recommendations**: Rule-based suggests {top_score}, while ML suggests {top_ml}. "
+            f"Different Recommendations: Rule-based suggests {top_score}, while ML suggests {top_ml}. "
             f"Consider your skin's unique characteristics to choose between them."
         )
     
     # Insight 2: Confidence
     if ml_confidence > 0.75:
         insights.append(
-            f"🎯 **High ML Confidence**: The model is {ml_confidence:.0%} confident in recommending {top_ml}, "
+            f"High ML Confidence: The model is {ml_confidence:.0%} confident in recommending {top_ml}, "
             f"based on similar skincare profiles in the training data."
         )
     elif ml_confidence > 0.6:
         insights.append(
-            f"📊 **Moderate ML Confidence**: The model is {ml_confidence:.0%} confident in its recommendation. "
+            f"Moderate ML Confidence: The model is {ml_confidence:.0%} confident in its recommendation. "
             f"Additional factors may influence the best choice for you."
         )
     else:
         insights.append(
-            f"🤔 **Lower ML Confidence**: The model is {ml_confidence:.0%} confident, suggesting your profile "
+            f"Lower ML Confidence: The model is {ml_confidence:.0%} confident, suggesting your profile "
             f"doesn't closely match training examples. Consider Rule-based recommendation."
         )
     
@@ -362,7 +362,7 @@ def _display_insights(recommendations: List, ml_result: Dict, user_profile: Dict
     
     # Display insights
     for insight in insights:
-        st.info(insight, icon="ℹ️")
+        st.info(insight)
 
 
 def display_ml_performance_metrics():

@@ -92,11 +92,11 @@ def verify_required_files():
             missing_models.append(f"models/{f}")
     
     if missing_data or missing_models:
-        error_msg = "⚠️ Missing Required Files:\n"
+        error_msg = "Missing Required Files:\n"
         if missing_data:
-            error_msg += f"\n📊 Data files: {', '.join(missing_data)}"
+            error_msg += f"\nData files: {', '.join(missing_data)}"
         if missing_models:
-            error_msg += f"\n🤖 Model files: {', '.join(missing_models)}"
+            error_msg += f"\nModel files: {', '.join(missing_models)}"
         error_msg += "\n\nTo fix:\n"
         error_msg += "1. Ensure files exist in GitHub repo\n"
         error_msg += "2. Run: git add data/ models/\n"
@@ -105,7 +105,7 @@ def verify_required_files():
         error_msg += "5. Redeploy Streamlit Cloud app\n"
         return False, error_msg
     
-    return True, "✅ All required files found"
+    return True, "All required files found"
 
 # ========== LOAD ML MODELS (CACHED) ==========
 @st.cache_resource
@@ -124,13 +124,13 @@ def load_ml_models():
             raise Exception("Failed to load all required models")
         return model_loader
     except Exception as e:
-        st.error(f"❌ Error loading models: {e}")
+        st.error(f"Error loading models: {e}")
         st.info("💡 Tip: Ensure models/ folder has all .pkl files")
         return None
 
 model_loader = load_ml_models()
 
-# ========== CUSTOM CSS ==========
+# ========== CUSTOM CSS - PROFESSIONAL DARK/LIGHT MODE ==========
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Raleway:ital,wght@0,100..900;1,100..900&family=Space+Grotesk:wght@300..700&display=swap');
@@ -166,7 +166,7 @@ st.markdown("""
 }
 
 .main {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 50%, #f3f4f6 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 50%, #f5f7fa 100%);
 }
 
 /* Tabs Styling */
@@ -243,10 +243,7 @@ h1 {
     font-size: 48px;
     font-weight: 800;
     animation: fadeIn 0.6s ease-out;
-    background: linear-gradient(135deg, #000000 0%, #333333 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #000000;
 }
 
 h2 {
@@ -255,6 +252,7 @@ h2 {
     margin-bottom: 20px;
     font-weight: 700;
     animation: slideUp 0.5s ease-out;
+    color: #000000;
 }
 
 h3 {
@@ -272,6 +270,34 @@ p {
     font-size: 15px;
 }
 
+@media (prefers-color-scheme: dark) {
+    h1, h2, h3 {
+        color: #ffffff;
+    }
+    
+    h3 {
+        color: #e5e7eb;
+    }
+    
+    p {
+        color: #d1d5db;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    h1, h2, h3 {
+        color: #000000;
+    }
+    
+    h3 {
+        color: #1f2937;
+    }
+    
+    p {
+        color: #4b5563;
+    }
+}
+
 /* Input Styling */
 .stTextInput input,
 .stTextArea textarea,
@@ -284,6 +310,7 @@ p {
     font-family: 'DM Sans', sans-serif !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     background-color: #ffffff !important;
+    color: #1f2937 !important;
 }
 
 .stTextInput input:focus,
@@ -293,6 +320,28 @@ p {
     border-color: #000000 !important;
     background-color: #ffffff !important;
     box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1) !important;
+    color: #1f2937 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .stTextInput input,
+    .stTextArea textarea,
+    .stNumberInput input,
+    .stSelectbox select {
+        background-color: #1f2937 !important;
+        color: #ffffff !important;
+        border-color: #4b5563 !important;
+    }
+    
+    .stTextInput input:focus,
+    .stTextArea textarea:focus,
+    .stNumberInput input:focus,
+    .stSelectbox select:focus {
+        border-color: #ffffff !important;
+        background-color: #111827 !important;
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+    }
 }
 
 /* Slider Styling */
@@ -302,6 +351,12 @@ p {
     font-family: 'DM Sans', sans-serif;
     margin-bottom: 12px;
     display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+    .stSlider label {
+        color: #e5e7eb;
+    }
 }
 
 /* Checkbox Styling */
@@ -315,6 +370,12 @@ p {
     color: #1f2937;
     font-family: 'DM Sans', sans-serif;
     cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+    .stCheckbox label {
+        color: #e5e7eb;
+    }
 }
 
 /* Metric Cards */
@@ -353,12 +414,33 @@ p {
     background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
 }
 
-/* Tags */
+/* Premium Card Container */
+.premium-card {
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+    padding: 28px;
+    border-radius: 16px;
+    border: 1.5px solid #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    margin: 16px 0;
+}
+
+.premium-card:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    border-color: #d1d5db;
+    transform: translateY(-2px);
+}
+    transform: translateY(-5px);
+    border-color: #d1d5db;
+    background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+}
+
+/* Tags - Premium Styling */
 .ingredient-tag {
     display: inline-block;
     background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
     color: #1f2937;
-    padding: 10px 16px;
+    padding: 12px 18px;
     border-radius: 24px;
     margin: 6px 6px 6px 0;
     font-size: 13px;
@@ -366,14 +448,14 @@ p {
     border: 1.5px solid #d1d5db;
     transition: all 0.3s ease;
     cursor: default;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .ingredient-tag:hover {
     background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
     border-color: #9ca3af;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
 }
 
 .ingredient-tag.safe {
@@ -383,8 +465,8 @@ p {
 }
 
 .ingredient-tag.safe:hover {
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.2);
+    transform: translateY(-3px);
 }
 
 .ingredient-tag.active {
@@ -394,8 +476,8 @@ p {
 }
 
 .ingredient-tag.active:hover {
-    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
-    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(168, 85, 247, 0.2);
+    transform: translateY(-3px);
 }
 
 .ingredient-tag.warning {
@@ -405,45 +487,57 @@ p {
 }
 
 .ingredient-tag.warning:hover {
-    box-shadow: 0 4px 12px rgba(202, 138, 4, 0.2);
-    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(202, 138, 4, 0.2);
+    transform: translateY(-3px);
 }
 
-/* Badges */
+/* Badges - No Emojis */
 .success-badge {
-    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-    color: #166534;
-    padding: 18px 24px;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    color: #065f46;
+    padding: 20px 24px;
     border-radius: 12px;
     margin: 16px 0;
     font-weight: 600;
-    border: 1.5px solid #86efac;
+    border: 1.5px solid #6ee7b7;
     animation: slideInLeft 0.5s ease-out;
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
 }
 
 .info-badge {
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
     color: #0c2d6b;
-    padding: 18px 24px;
+    padding: 20px 24px;
     border-radius: 12px;
     margin: 16px 0;
     font-weight: 600;
     border: 1.5px solid #60a5fa;
     animation: slideInLeft 0.5s ease-out 0.1s both;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
 }
 
 .warning-badge {
-    background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
+    background: linear-gradient(135deg, #fefce8 0%, #fef08a 100%);
     color: #78350f;
-    padding: 18px 24px;
+    padding: 20px 24px;
     border-radius: 12px;
     margin: 16px 0;
     font-weight: 600;
-    border: 1.5px solid #fbbf24;
+    border: 1.5px solid #facc15;
     animation: slideInLeft 0.5s ease-out 0.2s both;
-    box-shadow: 0 4px 12px rgba(251, 146, 60, 0.15);
+    box-shadow: 0 4px 12px rgba(202, 138, 4, 0.12);
+}
+
+.error-badge {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    color: #7f1d1d;
+    padding: 20px 24px;
+    border-radius: 12px;
+    margin: 16px 0;
+    font-weight: 600;
+    border: 1.5px solid #fca5a5;
+    animation: slideInLeft 0.5s ease-out 0.3s both;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.12);
 }
 
 /* Divider */
@@ -472,11 +566,23 @@ p {
     font-family: 'DM Sans', sans-serif;
 }
 
+@media (prefers-color-scheme: dark) {
+    .stRadio label {
+        color: #e5e7eb;
+    }
+}
+
 /* Multiselect */
 .stMultiSelect label {
     font-weight: 600;
     color: #1f2937;
     font-family: 'DM Sans', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    .stMultiSelect label {
+        color: #e5e7eb;
+    }
 }
 
 /* Table */
@@ -505,34 +611,141 @@ p {
 """, unsafe_allow_html=True)
 
 # ========== TITLE & SUBTITLE ==========
-col1, col2 = st.columns([1, 5])
-with col1:
-    st.image(str(logo_path), width=90)
-with col2:
-    st.markdown("<h1 style='margin-top: 10px;'>GlowGuide</h1>", unsafe_allow_html=True)
+st.markdown("""
+<style>
+    .glowguide-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-bottom: 16px;
+        animation: fadeIn 0.6s ease-out;
+        padding: 16px 0;
+    }
+    
+    .glowguide-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+    }
+    
+    .glowguide-title {
+        font-size: 48px;
+        font-weight: 800;
+        margin: 0;
+        font-family: 'Space Grotesk', sans-serif;
+        letter-spacing: -0.8px;
+        color: var(--text-color, #000000);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        .glowguide-title {
+            color: #ffffff;
+        }
+    }
+    
+    @media (prefers-color-scheme: light) {
+        .glowguide-title {
+            color: #000000;
+        }
+    }
+</style>
 
-st.markdown("<p style='text-align: center; color: #666666; font-size: 18px; margin-bottom: 28px; font-weight: 500; letter-spacing: 0.3px;'>Find the perfect skincare products based on your unique needs</p>", unsafe_allow_html=True)
+<div class="glowguide-header">
+    <img src="file://""" + str(logo_path) + """" class="glowguide-logo" alt="GlowGuide Logo">
+    <h1 class="glowguide-title">GlowGuide</h1>
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("""
 <style>
-    .title-section {
-        animation: slideUp 0.6s ease-out;
+    .glowguide-subtitle {
+        text-align: center;
+        font-size: 16px;
+        margin-bottom: 32px;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        color: var(--subtitle-color, #6b7280);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        .glowguide-subtitle {
+            color: #d1d5db;
+        }
+    }
+    
+    @media (prefers-color-scheme: light) {
+        .glowguide-subtitle {
+            color: #6b7280;
+        }
     }
 </style>
+
+<p class="glowguide-subtitle">Find the perfect skincare products based on your unique skin profile</p>
 """, unsafe_allow_html=True)
 
 # ========== SIDEBAR - USER PROFILE ==========
 with st.sidebar:
-    # Logo + Title in sidebar
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        st.image(str(logo_path), width=50)
-    with col2:
-        st.markdown("<h2 style='margin: 0; padding-top: 5px;'>GlowGuide</h2>", unsafe_allow_html=True)
+    # Unified GlowGuide Header
+    st.markdown("""
+    <style>
+        .sidebar-glowguide {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding-bottom: 24px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .sidebar-glowguide-logo {
+            width: 45px;
+            height: 45px;
+            object-fit: contain;
+        }
+        
+        .sidebar-glowguide-title {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0;
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--sidebar-text, #000000);
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .sidebar-glowguide {
+                border-bottom-color: #374151;
+            }
+            .sidebar-glowguide-title {
+                color: #ffffff;
+            }
+        }
+        
+        @media (prefers-color-scheme: light) {
+            .sidebar-glowguide {
+                border-bottom-color: #e5e7eb;
+            }
+            .sidebar-glowguide-title {
+                color: #000000;
+            }
+        }
+    </style>
+    
+    <div class="sidebar-glowguide">
+        <img src="file://""" + str(logo_path) + """" class="sidebar-glowguide-logo" alt="GlowGuide">
+        <h2 class="sidebar-glowguide-title">GlowGuide</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown(
+        "<p style='text-align: center; font-size: 12px; color: #9ca3af; margin-bottom: 24px; font-weight: 500;'>Skincare Intelligence</p>",
+        unsafe_allow_html=True
+    )
     
     st.divider()
     
-    st.markdown("<div class='sidebar-header'>Your Profile</div>", unsafe_allow_html=True)
+    st.markdown("<h3 style='font-size: 16px; font-weight: 700; margin: 16px 0 12px 0; color: #1f2937;'>Your Profile</h3>", unsafe_allow_html=True)
     
     # ML Backend compatible skin type selector
     skin_type = st.selectbox(
@@ -572,7 +785,7 @@ with st.sidebar:
     
     st.divider()
     
-    st.markdown("<div class='sidebar-header'>Budget & Preferences</div>", unsafe_allow_html=True)
+    st.markdown("<h3 style='font-size: 16px; font-weight: 700; margin: 16px 0 12px 0; color: #1f2937;'>Budget & Preferences</h3>", unsafe_allow_html=True)
     
     budget_min, budget_max = st.slider(
         "Budget Range",
@@ -582,7 +795,7 @@ with st.sidebar:
     
     st.divider()
     
-    st.markdown("<div class='sidebar-header'>Preferences</div>", unsafe_allow_html=True)
+    st.markdown("<h3 style='font-size: 16px; font-weight: 700; margin: 16px 0 12px 0; color: #1f2937;'>Preferences</h3>", unsafe_allow_html=True)
     
     alcohol_free = st.checkbox("Alcohol-Free Only", value=False, key="sidebar_alcohol_main")
     fragrance_free = st.checkbox("Fragrance-Free Only", value=False, key="sidebar_fragrance_main")
@@ -677,10 +890,10 @@ with tab1:
             
             with col3:
                 st.markdown("""
-                <div style='background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); 
-                            padding: 20px; border-radius: 12px; border: 1.5px solid #86efac; text-align: center;'>
-                    <p style='color: #166534; font-size: 14px; margin: 0; font-weight: 500;'>STATUS</p>
-                    <p style='color: #166534; font-size: 22px; margin: 10px 0; font-weight: 700;'>✅ Ready</p>
+                <div style='background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); 
+                            padding: 20px; border-radius: 12px; border: 1.5px solid #6ee7b7; text-align: center;'>
+                    <p style='color: #065f46; font-size: 14px; margin: 0; font-weight: 500;'>STATUS</p>
+                    <p style='color: #065f46; font-size: 22px; margin: 10px 0; font-weight: 700;'>Ready</p>
                 </div>
                 """, unsafe_allow_html=True)
             
@@ -750,14 +963,14 @@ with tab1:
                                     color: #2563eb;
                                     font-weight: 600;
                                 ">
-                                    🔍 Click to view product
+                                    View product
                                 </p>
                             </div>
                         </a>
                         """, unsafe_allow_html=True)
             else:
                 # ✅ GRACEFUL FALLBACK MESSAGE
-                st.info(f"ℹ️ Limited product data available for **{result.get('ingredient', 'this ingredient')}**. "
+                st.info(f"Limited product data available for **{result.get('ingredient', 'this ingredient')}**. "
                         "Consider searching for alternative products with similar key ingredients.")
             
             st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
@@ -777,17 +990,17 @@ with tab1:
                         st.markdown(f"**Frequency:** {remedy.get('Frequency', 'N/A')}")
             else:
                 # ✅ GRACEFUL FALLBACK MESSAGE
-                st.info(f"ℹ️ Limited remedy data available for **{result.get('ingredient', 'this ingredient')}**. "
+                st.info(f"Limited remedy data available for **{result.get('ingredient', 'this ingredient')}**. "
                         "Consult with a dermatologist for personalized home remedy recommendations.")
             
             st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
             
             # Summary
-            st.markdown("<div class='success-badge'>✅ Complete recommendation generated! Share with your dermatologist for personalized advice.</div>", unsafe_allow_html=True)
+            st.markdown("<div class='success-badge'>Complete recommendation generated. Share with your dermatologist for personalized advice.</div>", unsafe_allow_html=True)
         
         else:
             error_msg = result.get('error', 'Unknown error') if result else 'Failed to generate recommendation'
-            st.error(f"❌ Could not generate recommendation: {error_msg}")
+            st.error(f"Could not generate recommendation: {error_msg}")
             st.info("Please check your input values and try again.")
 
 # ========== TAB 2: INGREDIENT ANALYZER ==========
@@ -875,7 +1088,7 @@ with tab2:
         fig_gauge.update_layout(height=300)
         st.plotly_chart(fig_gauge, use_container_width=True)
         
-        st.markdown("<div class='success-badge'>Safe for your skin profile!</div>", unsafe_allow_html=True)
+        st.markdown("<div class='success-badge'>Safe for your skin profile</div>", unsafe_allow_html=True)
 
 # ========== TAB 3: ROUTINE BUILDER ==========
 with tab3:
@@ -1233,7 +1446,7 @@ with tab3:
                         for insight in insights['key_insights']:
                             st.markdown(f"\n{insight}")
                     
-                    st.markdown("<div class='success-badge'>Routine created successfully! Save this page for reference and start using your personalized routine today.</div>", unsafe_allow_html=True)
+                    st.markdown("<div class='success-badge'>Routine created successfully. Save this page for reference and start using your personalized routine today.</div>", unsafe_allow_html=True)
                 
                 else:
                     st.error(f"Failed to generate routine: {routine.get('error', 'Unknown error')}")

@@ -73,7 +73,7 @@ def render_classification_result(
     # Display safety badge
     st.divider()
     if safety_score >= 70:
-        st.success("✓ Generally well-tolerated")
+        st.success("Generally well-tolerated")
     elif safety_score >= 40:
         st.warning("⚠ Contains some irritants")
     else:

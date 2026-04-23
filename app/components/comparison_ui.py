@@ -73,7 +73,7 @@ def render_comparison(inputs: dict, df, vectorizer) -> None:
             with c1:
                 st.metric("Price", format_price(prod_a["Price"]))
             with c2:
-                st.metric("Rating", f"⭐ {prod_a['Rank']:.1f}")
+                st.metric("Rating", f"{prod_a['Rank']:.1f}")
             st.markdown("**Safety Score**")
             st.progress(safety_a / 100, text=f"{safety_a}/100")
         
@@ -95,7 +95,7 @@ def render_comparison(inputs: dict, df, vectorizer) -> None:
             with c1:
                 st.metric("Price", format_price(prod_b["Price"]))
             with c2:
-                st.metric("Rating", f"⭐ {prod_b['Rank']:.1f}")
+                st.metric("Rating", f"{prod_b['Rank']:.1f}")
             st.markdown("**Safety Score**")
             st.progress(safety_b / 100, text=f"{safety_b}/100")
         

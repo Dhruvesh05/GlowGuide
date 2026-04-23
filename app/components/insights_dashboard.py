@@ -37,9 +37,9 @@ def display_eda_dashboard():
     Shows comprehensive data visualizations and statistics.
     """
     
-    st.markdown("## 📊 Data Science Insights")
+    st.markdown("## Data Science Insights")
     st.markdown(
-        "<p style='font-size: 14px; color: #666; margin-bottom: 20px;'>"
+        "<p style='font-size: 14px; color: #6b7280; margin-bottom: 20px;'>"
         "Explore the skincare dataset: Ingredient recommendations, skin type distribution, "
         "and concern patterns from 50 analyzed skincare profiles."
         "</p>",
@@ -59,7 +59,7 @@ def display_eda_dashboard():
     # SECTION 1: DATASET OVERVIEW
     # ====================================================================
     
-    st.markdown("### 📋 Dataset Overview")
+    st.markdown("### Dataset Overview")
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -82,7 +82,7 @@ def display_eda_dashboard():
     # SECTION 2: MAIN VISUALIZATIONS (3 columns)
     # ====================================================================
     
-    st.markdown("### 📈 Key Distributions")
+    st.markdown("### Key Distributions")
     
     col1, col2, col3 = st.columns(3)
     
@@ -190,7 +190,7 @@ def display_eda_dashboard():
     # SECTION 3: ADVANCED ANALYSIS
     # ====================================================================
     
-    st.markdown("### 🔍 Advanced Analysis")
+    st.markdown("### Advanced Analysis")
     
     analysis_cols = st.columns(2)
     
@@ -244,7 +244,7 @@ def display_eda_dashboard():
     # SECTION 4: CORRELATION & PATTERNS
     # ====================================================================
     
-    st.markdown("### 🎯 Pattern Analysis")
+    st.markdown("### Pattern Analysis")
     
     pattern_cols = st.columns(2)
     
@@ -317,7 +317,7 @@ def display_eda_dashboard():
     # SECTION 5: DATASET STATISTICS
     # ====================================================================
     
-    st.markdown("### 📊 Detailed Statistics")
+    st.markdown("### Detailed Statistics")
     
     with st.expander("View Full Dataset Summary", expanded=False):
         summary = get_dataset_summary(df)
