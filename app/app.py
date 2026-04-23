@@ -1079,7 +1079,7 @@ with tab2:
             font=dict(color='#6b7280'),
             transition={'duration': 700, 'easing': 'cubic-in-out'}
         )
-        st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
         
         st.markdown("<div class='success-badge'>Safe for your skin profile</div>", unsafe_allow_html=True)
 
@@ -1223,7 +1223,7 @@ with tab3:
                         transition={'duration': 600, 'easing': 'cubic-in-out'},
                         margin=dict(l=10, r=10, t=40, b=10)
                     )
-                    st.plotly_chart(fig_timeline, use_container_width=True, config={'displayModeBar': False})
+                    st.plotly_chart(fig_timeline, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
                     
                     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
                     
@@ -1308,7 +1308,7 @@ with tab3:
                             transition={'duration': 600, 'easing': 'cubic-in-out'},
                             margin=dict(l=10, r=10, t=40, b=10)
                         )
-                        st.plotly_chart(fig_concerns, use_container_width=True, config={'displayModeBar': False})
+                        st.plotly_chart(fig_concerns, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
                     
                     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
                     
@@ -1342,7 +1342,7 @@ with tab3:
                         showlegend=True,
                         legend=dict(orientation='h', yanchor='bottom', y=-0.2, xanchor='center', x=0.5)
                     )
-                    st.plotly_chart(fig_composition, use_container_width=True, config={'displayModeBar': False})
+                    st.plotly_chart(fig_composition, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
                     
                     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
                     
@@ -1423,7 +1423,7 @@ with tab3:
                             transition={'duration': 600, 'easing': 'cubic-in-out'},
                             margin=dict(l=10, r=10, t=40, b=10)
                         )
-                        st.plotly_chart(fig_confidence, use_container_width=True, config={'displayModeBar': False})
+                        st.plotly_chart(fig_confidence, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
                     
                     with col_viz2:
                         st.markdown("#### Input Profile Summary")

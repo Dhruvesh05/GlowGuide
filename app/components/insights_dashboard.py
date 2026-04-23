@@ -117,7 +117,7 @@ def display_eda_dashboard():
             transition={'duration': 600, 'easing': 'cubic-in-out'},
             margin=dict(l=8, r=8, t=36, b=8)
         )
-        st.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig1, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
         
         # Stats
         with st.expander("View Stats", expanded=False):
@@ -154,7 +154,7 @@ def display_eda_dashboard():
             transition={'duration': 600, 'easing': 'cubic-in-out'},
             margin=dict(l=8, r=8, t=36, b=8)
         )
-        st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
         
         # Stats
         with st.expander("View Stats", expanded=False):
@@ -199,7 +199,7 @@ def display_eda_dashboard():
             transition={'duration': 600, 'easing': 'cubic-in-out'},
             margin=dict(l=8, r=8, t=36, b=8)
         )
-        st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
         
         # Stats
         with st.expander("View Stats", expanded=False):
@@ -237,7 +237,7 @@ def display_eda_dashboard():
             transition={'duration': 600, 'easing': 'cubic-in-out'},
             margin=dict(l=8, r=8, t=40, b=8)
         )
-        st.plotly_chart(fig_heat, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_heat, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
     
     # Right: Concern Distribution Pie Chart
     with analysis_cols[1]:
@@ -279,7 +279,7 @@ def display_eda_dashboard():
             showlegend=True,
             legend=dict(orientation='h', yanchor='bottom', y=-0.25, xanchor='center', x=0.5)
         )
-        st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
     
     st.divider()
     
@@ -338,7 +338,7 @@ def display_eda_dashboard():
             transition={'duration': 600, 'easing': 'cubic-in-out'},
             margin=dict(l=8, r=8, t=40, b=8)
         )
-        st.plotly_chart(fig_pattern, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_pattern, use_container_width=True, config={'displayModeBar': True, 'scrollZoom': True, 'displaylogo': False, 'modeBarButtonsToAdd': ['zoom2d','pan2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toImage']})
     
     with pattern_cols[1]:
         st.markdown("#### Top Recommendations by Concern")
